@@ -1,0 +1,500 @@
+/*
+  theme-dark.css — Hikayat Journal Archive
+  Override visual only. Struktur HTML & JS tidak diubah.
+  Cara pakai: tambahkan di <head> SETELAH stylesheet lama:
+  <link rel="stylesheet" href="theme-dark.css" />
+*/
+
+/* ── TOKEN OVERRIDE ── */
+:root {
+  --ink:        #f0ede6;
+  --ink-light:  #8a8a82;
+  --ink-faint:  #4a4a46;
+  --paper:      #111110;
+  --paper-dim:  #1f1f1d;
+  --accent:     #c8392b;
+  --white:      #1a1a18;
+
+  --r: 4px;
+  --t: 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ── BODY ── */
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* ── NAV ── */
+nav {
+  background: rgba(17, 17, 16, 0.88);
+  border-bottom: 1px solid #2a2a27;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.nav-brand { color: var(--ink); }
+
+.nav-brand-word {
+  color: #f0ede6;
+  letter-spacing: -0.5px;
+}
+
+.nav-brand-sub {
+  color: var(--ink-faint);
+  letter-spacing: 0.16em;
+}
+
+.btn-sm {
+  border-color: #2a2a27;
+  color: var(--ink-light);
+  background: transparent;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.btn-sm:hover {
+  border-color: var(--ink-faint);
+  color: var(--ink);
+}
+.btn-sm.fill {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #f0ede6;
+}
+.btn-sm.fill:hover {
+  background: #a82f24;
+  border-color: #a82f24;
+  opacity: 1;
+}
+
+/* ── LOADING BAR ── */
+.loading-bar {
+  background: #1f1f1d;
+}
+.loading-bar::after {
+  background: var(--accent);
+}
+
+/* ── HERO ── */
+.hero {
+  padding: 96px 40px 80px;
+}
+
+.hero-eyebrow {
+  color: var(--accent);
+  letter-spacing: 0.18em;
+  font-size: 10px;
+}
+
+.hero-title {
+  font-size: clamp(42px, 5.5vw, 72px);
+  letter-spacing: -2px;
+  line-height: 1.04;
+  color: #f0ede6;
+}
+
+.hero-title em {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.hero-sub {
+  color: var(--ink-light);
+  font-weight: 300;
+  line-height: 1.8;
+  font-size: 14.5px;
+}
+
+/* Stats box */
+.hero-stats {
+  background: #1f1f1d;
+  border: 1px solid #2a2a27;
+  border-radius: 6px;
+  gap: 1px;
+}
+
+.stat {
+  background: #1a1a18;
+  padding: 18px 22px;
+}
+
+.stat-num {
+  font-size: 32px;
+  letter-spacing: -1.5px;
+  color: #f0ede6;
+}
+
+.stat-label {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-family: var(--f-mono);
+}
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  background: #111110;
+  border-top: 1px solid #2a2a27;
+  border-bottom: 1px solid #2a2a27;
+  padding: 16px 40px;
+  top: 62px;
+}
+
+.search-input {
+  background: #1a1a18;
+  border: 1px solid #2a2a27;
+  color: var(--ink);
+  font-size: 13.5px;
+  border-radius: 4px;
+}
+.search-input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(200, 57, 43, 0.08);
+}
+.search-input::placeholder {
+  color: var(--ink-faint);
+}
+.search-ico {
+  color: var(--ink-faint);
+}
+
+/* Chips */
+.chip {
+  background: transparent;
+  border: 1px solid #2a2a27;
+  color: var(--ink-faint);
+  border-radius: 3px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  padding: 5px 13px;
+  transition: all var(--t);
+}
+.chip:hover {
+  border-color: var(--ink-faint);
+  color: var(--ink-light);
+}
+.chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #f0ede6;
+}
+
+/* Sort select */
+.sort-sel {
+  background: #1a1a18;
+  border: 1px solid #2a2a27;
+  color: var(--ink-light);
+  font-size: 12.5px;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.sort-sel:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.sort-sel option {
+  background: #1a1a18;
+  color: var(--ink);
+}
+
+/* ── GRID SECTION ── */
+.grid-section {
+  padding-top: 32px;
+  padding-bottom: 96px;
+}
+
+.grid-count {
+  font-size: 12px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+}
+.grid-count strong {
+  color: var(--ink-light);
+}
+
+/* ── JOURNAL GRID ── */
+.journal-grid {
+  background: #2a2a27;
+  border: 1px solid #2a2a27;
+  border-radius: 6px;
+  gap: 1px;
+}
+
+/* ── CARD ── */
+.card {
+  background: #111110;
+  border-left: 3px solid transparent;
+  transition: background var(--t), border-color var(--t);
+  min-height: 160px;
+}
+.card:hover {
+  background: #161614;
+  border-left-color: var(--accent);
+}
+
+/* Card cover */
+.card-cover {
+  width: 180px;
+  background: #1a1a18;
+}
+.card-cover-placeholder {
+  background: #1a1a18;
+}
+.card-cover-placeholder span {
+  color: #3a3a37;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+/* Card body */
+.card-body {
+  padding: 20px 24px;
+  gap: 8px;
+}
+
+/* Badge — dark tinted, warna tetap ada tapi muted */
+.badge {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  padding: 3px 9px;
+  border-radius: 2px;
+}
+.b-sains      { background: #0d1a2e; color: #5b8dd9; border: 1px solid #1a2e4a; }
+.b-sosial     { background: #2a1a08; color: #d4823a; border: 1px solid #3d2510; }
+.b-hukum      { background: #0d2018; color: #4aad6e; border: 1px solid #163322; }
+.b-ekonomi    { background: #2a0d1a; color: #d45a8a; border: 1px solid #3d1226; }
+.b-teknologi  { background: #1a0d2e; color: #9b72e6; border: 1px solid #2d1a4a; }
+.b-kesehatan  { background: #0d2420; color: #3db89a; border: 1px solid #163830; }
+.b-pendidikan { background: #261e08; color: #c4a832; border: 1px solid #3a2e0a; }
+.b-lain       { background: #1a1a18; color: #6b6b65; border: 1px solid #2a2a27; }
+
+.card-year {
+  color: var(--ink-faint);
+  font-size: 10.5px;
+}
+
+.card-title {
+  font-family: var(--f-display);
+  font-size: 17px;
+  line-height: 1.32;
+  letter-spacing: -0.2px;
+  color: #e8e5de;
+}
+
+.card-authors {
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-weight: 300;
+  letter-spacing: 0.01em;
+}
+
+.card-abstract {
+  font-size: 12.5px;
+  color: #5a5a55;
+  line-height: 1.7;
+}
+
+.card-foot {
+  border-top: 1px solid #2a2a27;
+  padding-top: 12px;
+  margin-top: auto;
+}
+
+.card-doi {
+  color: #3a3a37;
+  font-size: 9.5px;
+}
+.card-doi:hover { color: var(--accent); }
+
+/* Card action buttons */
+.act {
+  font-size: 11.5px;
+  padding: 5px 12px;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+}
+.act-link {
+  background: transparent;
+  border: 1px solid #2a2a27;
+  color: var(--ink-faint);
+}
+.act-link:hover {
+  border-color: var(--ink-faint);
+  color: var(--ink-light);
+}
+.act-dl {
+  background: var(--accent);
+  color: #f0ede6;
+  border: 1px solid var(--accent);
+}
+.act-dl:hover {
+  background: #a82f24;
+  border-color: #a82f24;
+  opacity: 1;
+}
+
+/* ── EMPTY / ERROR STATE ── */
+.state-box h3 {
+  color: var(--ink-light);
+}
+.state-box p {
+  color: var(--ink-faint);
+}
+.state-box a {
+  color: var(--accent);
+}
+
+/* ── MODAL ── */
+.overlay {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.modal {
+  background: #161614;
+  border: 1px solid #2a2a27;
+  border-radius: 8px;
+  max-width: 680px;
+}
+
+.modal-hd {
+  padding: 28px 30px 0;
+  border-bottom: none;
+}
+
+.modal-close {
+  background: #1f1f1d;
+  border: none;
+  color: var(--ink-faint);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 16px;
+  transition: background var(--t), color var(--t);
+}
+.modal-close:hover {
+  background: #2a2a27;
+  color: var(--ink-light);
+}
+
+.modal-bd {
+  padding: 18px 30px 30px;
+}
+
+.modal-title {
+  font-size: 24px;
+  letter-spacing: -0.5px;
+  line-height: 1.22;
+  color: #f0ede6;
+  margin-bottom: 18px;
+}
+
+.modal-metas {
+  border-bottom: 1px solid #2a2a27;
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+  gap: 24px;
+}
+
+.meta-lbl {
+  color: #3a3a37;
+  letter-spacing: 0.12em;
+  font-size: 9.5px;
+}
+.meta-val {
+  color: var(--ink-light);
+  font-size: 13.5px;
+}
+
+.sec-lbl {
+  color: var(--accent);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.modal-abstract {
+  font-size: 14px;
+  color: var(--ink-light);
+  line-height: 1.82;
+  font-weight: 300;
+}
+
+.kw {
+  background: #1a1a18;
+  border: 1px solid #2a2a27;
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  border-radius: 2px;
+  padding: 4px 11px;
+}
+
+/* Modal CTAs */
+.cta-dl {
+  background: var(--accent);
+  color: #f0ede6;
+  border-radius: 4px;
+  font-size: 13.5px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  padding: 10px 22px;
+}
+.cta-dl:hover {
+  background: #a82f24;
+  opacity: 1;
+}
+.cta-ext {
+  background: transparent;
+  color: var(--ink-light);
+  border: 1px solid #2a2a27;
+  border-radius: 4px;
+  font-size: 13.5px;
+  font-weight: 400;
+  padding: 10px 22px;
+}
+.cta-ext:hover {
+  border-color: var(--ink-faint);
+  color: var(--ink);
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid #1f1f1d;
+  padding: 20px 40px;
+}
+footer p {
+  font-size: 11.5px;
+  color: #3a3a37;
+  letter-spacing: 0.02em;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 780px) {
+  nav, .filter-bar, .grid-section, footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .hero {
+    padding: 56px 20px 44px;
+  }
+  .modal-hd, .modal-bd {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .card-cover {
+    width: 120px;
+  }
+}
+
+/* ── REDUCED MOTION ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
