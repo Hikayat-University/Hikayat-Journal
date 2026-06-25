@@ -380,14 +380,21 @@
     footer p { font-size: 12px; color: var(--ink-faint); }
 
     /* ── RESPONSIVE ── */
-    @media (max-width: 780px) {
-      nav, .filter-bar, .grid-section, footer { padding-left: 20px; padding-right: 20px; }
-      .hero { grid-template-columns: 1fr; padding: 52px 20px 40px; gap: 32px; }
-      .hero-title { font-size: 40px; }
-      .journal-grid { grid-template-columns: 1fr; }
-      .modal-hd, .modal-bd { padding-left: 20px; padding-right: 20px; }
-      .hero-stats { grid-template-columns: repeat(3,1fr); }
-    }
+@media (max-width: 780px) {
+  nav, .filter-bar, .grid-section, footer { padding-left: 20px; padding-right: 20px; }
+  .hero { grid-template-columns: 1fr; padding: 48px 20px 40px; min-height: auto; gap: 28px; }
+  .hero-title { font-size: 42px; }
+  .journal-grid { grid-template-columns: 1fr; }
+  .modal-hd, .modal-bd { padding-left: 20px; padding-right: 20px; }
+  .hero-stats { grid-template-columns: repeat(3,1fr); }
+  .card { flex-direction: column; min-height: auto; border-left: none; border-top: 3px solid transparent; }
+  .card:hover { border-left-color: transparent; border-top-color: var(--accent); }
+  .card-cover { width: 100%; height: 180px; }
+  .card-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .card-body { padding: 18px 20px; }
+  .card-title { font-size: 18px; }
+}
+
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { transition: none !important; animation: none !important; }
