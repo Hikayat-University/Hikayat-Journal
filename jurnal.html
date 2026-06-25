@@ -262,11 +262,52 @@
     }
     .btn-primary:hover { background: #333330; border-color: #333330; }
 
+    /* PDF preview — tinggi dibatasi ~3 halaman */
+    .pdf-preview-wrap {
+      position: relative;
+      overflow: hidden;
+      height: 820px;
+      transition: height 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .pdf-preview-wrap.expanded { height: 78vh; }
+
     .pdf-frame {
-      width: 100%; height: 78vh;
+      width: 100%; height: 100%;
       border: none; display: block;
       background: #f5f5f5;
     }
+
+    /* Gradient fade bawah */
+    .pdf-fade {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 200px;
+      background: linear-gradient(to bottom, transparent, var(--white));
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .pdf-preview-wrap.expanded .pdf-fade { opacity: 0; }
+
+    /* Tombol expand */
+    .pdf-expand-bar {
+      padding: 20px;
+      text-align: center;
+      border-top: 1px solid var(--paper-dim);
+      background: var(--white);
+    }
+    .pdf-expand-bar.hidden { display: none; }
+
+    .btn-expand {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--f-body); font-size: 13px; font-weight: 400;
+      color: var(--ink); background: var(--paper);
+      border: 1px solid var(--paper-mid); border-radius: 100px;
+      padding: 10px 24px; cursor: pointer;
+      transition: all var(--t);
+    }
+    .btn-expand:hover { border-color: var(--ink-faint); background: var(--paper-dim); }
+    .btn-expand svg { transition: transform 0.3s ease; }
+    .btn-expand.expanded svg { transform: rotate(180deg); }
 
     .pdf-unavailable {
       padding: 64px 40px;
@@ -329,7 +370,8 @@
       nav { padding: 0 24px; }
       .jurnal-hero, .jurnal-body { padding-left: 24px; padding-right: 24px; }
       .jurnal-title { letter-spacing: -1px; }
-      .pdf-frame { height: 55vh; }
+      .pdf-preview-wrap { height: 480px; }
+      .pdf-preview-wrap.expanded { height: 60vh; }
       .jurnal-cta { flex-direction: column; align-items: flex-start; }
       footer { padding: 20px 24px; flex-direction: column; gap: 6px; }
     }
@@ -423,7 +465,16 @@
             </a>
           </div>
         </div>
-        <iframe class="pdf-frame" id="pdfFrame" title="Dokumen jurnal"></iframe>
+        <div class="pdf-preview-wrap" id="pdfPreviewWrap">
+          <iframe class="pdf-frame" id="pdfFrame" title="Dokumen jurnal"></iframe>
+          <div class="pdf-fade" id="pdfFade"></div>
+        </div>
+        <div class="pdf-expand-bar" id="pdfExpandBar">
+          <button class="btn-expand" id="btnExpand" onclick="togglePdfExpand()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            Baca dokumen lengkap
+          </button>
+        </div>
         <div class="pdf-unavailable" id="pdfUnavailable">
           <p>Dokumen full text belum tersedia untuk jurnal ini.</p>
           <a href="#" class="btn-cta-ext" id="btnLinkFallback" target="_blank" rel="noopener" style="display:none;">
@@ -449,6 +500,25 @@
 </footer>
 
 <script>
+  // ── PDF EXPAND TOGGLE ──
+  function togglePdfExpand() {
+    const wrap = document.getElementById("pdfPreviewWrap");
+    const btn  = document.getElementById("btnExpand");
+    const bar  = document.getElementById("pdfExpandBar");
+
+    const isExpanded = wrap.classList.contains("expanded");
+
+    if (isExpanded) {
+      wrap.classList.remove("expanded");
+      btn.classList.remove("expanded");
+      btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg> Baca dokumen lengkap`;
+    } else {
+      wrap.classList.add("expanded");
+      btn.classList.add("expanded");
+      btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg> Tutup`;
+    }
+  }
+
   // ── CONFIG — samakan dengan index.html ──
   const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS3NnGuIRou-yGn_Ly-YJFFwL18UWakhwrKK1UG0dIv_1KqaBICXdNUMzrRw3vczjFv44ZfTTjS-w7l/pub?gid=0&single=true&output=csv";
 
