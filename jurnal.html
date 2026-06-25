@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jurnal — Hikayat Journal Archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:        #1c1c1a;
+      --ink-light:  #7a7a72;
+      --ink-faint:  #b4b4aa;
+      --paper:      #faf9f6;
+      --paper-dim:  #eeede8;
+      --paper-mid:  #e4e3dd;
+      --accent:     #8b2020;
+      --white:      #ffffff;
+
+      --f-display: 'Cormorant Garamond', Georgia, serif;
+      --f-body:    'Inter', system-ui, sans-serif;
+      --f-mono:    'JetBrains Mono', monospace;
+      --r: 12px;
+      --t: 220ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--f-body);
+      background: var(--paper);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(250, 249, 246, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--paper-dim);
+      padding: 0 52px; height: 68px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .nav-brand {
+      text-decoration: none; color: var(--ink);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .nav-brand img { height: 30px; width: auto; display: block; }
+    .nav-brand-word {
+      font-family: var(--f-display);
+      font-size: 22px; font-weight: 500; letter-spacing: -0.3px;
+    }
+    .nav-brand-sub {
+      font-family: var(--f-mono);
+      font-size: 9.5px; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--ink-faint);
+    }
+
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--f-body); font-size: 12.5px; font-weight: 400;
+      color: var(--ink-light); text-decoration: none;
+      border: 1px solid var(--paper-mid); border-radius: 100px;
+      padding: 7px 16px; transition: all var(--t);
+    }
+    .btn-back:hover { border-color: var(--ink-faint); color: var(--ink); }
+    .btn-back svg { flex-shrink: 0; }
+
+    /* ── LOADING ── */
+    .loading-screen {
+      min-height: 60vh;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+    }
+    .loading-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--ink-faint);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.2; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+    .loading-label {
+      font-family: var(--f-mono); font-size: 10px;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    /* ── ERROR ── */
+    .error-screen {
+      min-height: 60vh;
+      display: none; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px; text-align: center;
+      padding: 40px;
+    }
+    .error-screen.show { display: flex; }
+    .error-screen h2 {
+      font-family: var(--f-display); font-size: 32px;
+      font-weight: 400; color: var(--ink);
+    }
+    .error-screen p { font-size: 14px; color: var(--ink-light); }
+    .error-screen a { color: var(--accent); }
+
+    /* ── HERO JURNAL ── */
+    .jurnal-hero {
+      max-width: 860px; margin: 0 auto;
+      padding: 72px 52px 56px;
+      border-bottom: 1px solid var(--paper-dim);
+    }
+
+    .jurnal-eyebrow {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .badge {
+      font-family: var(--f-mono); font-size: 9.5px; font-weight: 500;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 100px;
+    }
+    .b-sains      { background:#edf2ff; color:#2b5ce6; }
+    .b-sosial     { background:#fff4e6; color:#c26400; }
+    .b-hukum      { background:#f0fff4; color:#2d8c4e; }
+    .b-ekonomi    { background:#fff0f6; color:#c2266a; }
+    .b-teknologi  { background:#f3f0ff; color:#6741d9; }
+    .b-kesehatan  { background:#e6fcf5; color:#0c7a5e; }
+    .b-pendidikan { background:#fff9db; color:#896a00; }
+    .b-lain       { background:#f1f3f5; color:#495057; }
+
+    .jurnal-year {
+      font-family: var(--f-mono); font-size: 10.5px;
+      color: var(--ink-faint); letter-spacing: 0.06em;
+    }
+
+    .jurnal-title {
+      font-family: var(--f-display);
+      font-size: clamp(36px, 4.5vw, 58px);
+      font-weight: 400; line-height: 1.08;
+      letter-spacing: -1.5px; color: var(--ink);
+      margin-bottom: 24px;
+    }
+
+    .jurnal-authors {
+      font-family: var(--f-body);
+      font-size: 14px; font-weight: 300;
+      color: var(--ink-light); line-height: 1.7;
+      margin-bottom: 32px;
+    }
+    .jurnal-authors strong {
+      font-weight: 400; color: var(--ink);
+    }
+
+    /* Meta grid */
+    .jurnal-meta {
+      display: flex; gap: 32px; flex-wrap: wrap;
+      padding: 24px 0; border-top: 1px solid var(--paper-dim);
+    }
+    .meta-item { display: flex; flex-direction: column; gap: 4px; }
+    .meta-lbl {
+      font-family: var(--f-mono); font-size: 9px;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .meta-val {
+      font-size: 13.5px; font-weight: 400; color: var(--ink);
+    }
+    .meta-val a {
+      color: var(--accent); text-decoration: none;
+    }
+    .meta-val a:hover { text-decoration: underline; }
+
+    /* ── BODY CONTENT ── */
+    .jurnal-body {
+      max-width: 860px; margin: 0 auto;
+      padding: 56px 52px 40px;
+    }
+
+    .section-label {
+      font-family: var(--f-mono); font-size: 9.5px;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--accent); font-weight: 400;
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: var(--paper-dim);
+    }
+
+    .jurnal-abstract {
+      font-family: var(--f-display);
+      font-size: clamp(19px, 2.2vw, 24px);
+      font-weight: 300; line-height: 1.72;
+      letter-spacing: -0.2px; color: var(--ink);
+      margin-bottom: 56px;
+    }
+
+    /* Keywords */
+    .kw-section { margin-bottom: 56px; }
+    .kw-wrap { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+    .kw {
+      padding: 6px 16px;
+      background: var(--white);
+      border: 1px solid var(--paper-dim);
+      border-radius: 100px;
+      font-family: var(--f-body);
+      font-size: 12.5px; color: var(--ink-light);
+      transition: all var(--t);
+    }
+    .kw:hover { border-color: var(--ink-faint); color: var(--ink); }
+
+    /* ── PDF VIEWER ── */
+    .pdf-section { margin-bottom: 64px; }
+
+    .pdf-viewer-wrap {
+      border: 1px solid var(--paper-dim);
+      border-radius: var(--r);
+      overflow: hidden;
+      background: var(--white);
+    }
+
+    .pdf-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--paper-dim);
+      background: var(--paper);
+    }
+    .pdf-toolbar-label {
+      font-family: var(--f-mono); font-size: 10px;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .pdf-toolbar-actions { display: flex; gap: 8px; }
+
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--f-body); font-size: 12px; font-weight: 400;
+      color: var(--ink-light); background: var(--white);
+      border: 1px solid var(--paper-dim); border-radius: 100px;
+      padding: 6px 14px; cursor: pointer; text-decoration: none;
+      transition: all var(--t);
+    }
+    .btn-outline:hover { border-color: var(--ink-faint); color: var(--ink); }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--f-body); font-size: 12px; font-weight: 400;
+      color: var(--white); background: var(--ink);
+      border: 1px solid var(--ink); border-radius: 100px;
+      padding: 6px 14px; cursor: pointer; text-decoration: none;
+      transition: all var(--t);
+    }
+    .btn-primary:hover { background: #333330; border-color: #333330; }
+
+    /* PDF preview — tinggi dibatasi ~3 halaman */
+    .pdf-preview-wrap {
+      position: relative;
+      overflow: hidden;
+      height: 820px;
+      transition: height 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .pdf-preview-wrap.expanded { height: 78vh; }
+
+    .pdf-frame {
+      width: 100%; height: 100%;
+      border: none; display: block;
+      background: #f5f5f5;
+    }
+
+    /* Gradient fade bawah */
+    .pdf-fade {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 200px;
+      background: linear-gradient(to bottom, transparent, var(--white));
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .pdf-preview-wrap.expanded .pdf-fade { opacity: 0; }
+
+    /* Tombol expand */
+    .pdf-expand-bar {
+      padding: 20px;
+      text-align: center;
+      border-top: 1px solid var(--paper-dim);
+      background: var(--white);
+    }
+    .pdf-expand-bar.hidden { display: none; }
+
+    .btn-expand {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--f-body); font-size: 13px; font-weight: 400;
+      color: var(--ink); background: var(--paper);
+      border: 1px solid var(--paper-mid); border-radius: 100px;
+      padding: 10px 24px; cursor: pointer;
+      transition: all var(--t);
+    }
+    .btn-expand:hover { border-color: var(--ink-faint); background: var(--paper-dim); }
+    .btn-expand svg { transition: transform 0.3s ease; }
+    .btn-expand.expanded svg { transform: rotate(180deg); }
+
+    .pdf-unavailable {
+      padding: 64px 40px;
+      text-align: center;
+      display: none;
+    }
+    .pdf-unavailable.show { display: block; }
+    .pdf-unavailable p {
+      font-family: var(--f-display); font-size: 20px;
+      font-weight: 300; color: var(--ink-light);
+      line-height: 1.6; margin-bottom: 24px;
+    }
+
+    /* ── CTA FOOTER ── */
+    .jurnal-cta {
+      border-top: 1px solid var(--paper-dim);
+      padding: 40px 0 80px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 24px; flex-wrap: wrap;
+    }
+    .jurnal-cta-text {
+      font-family: var(--f-display); font-size: 18px;
+      font-weight: 300; color: var(--ink-light);
+    }
+    .cta-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .btn-cta-dl {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--f-body); font-size: 13.5px; font-weight: 400;
+      color: var(--white); background: var(--ink);
+      border: 1px solid var(--ink); border-radius: 100px;
+      padding: 11px 24px; text-decoration: none;
+      transition: all var(--t);
+    }
+    .btn-cta-dl:hover { background: #333330; border-color: #333330; }
+
+    .btn-cta-ext {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--f-body); font-size: 13.5px; font-weight: 400;
+      color: var(--ink-light); background: transparent;
+      border: 1px solid var(--paper-mid); border-radius: 100px;
+      padding: 11px 24px; text-decoration: none;
+      transition: all var(--t);
+    }
+    .btn-cta-ext:hover { border-color: var(--ink-faint); color: var(--ink); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--paper-dim);
+      padding: 24px 52px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    footer p {
+      font-family: var(--f-mono); font-size: 11px;
+      color: var(--ink-faint); letter-spacing: 0.06em;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 760px) {
+      /* Nav */
+      nav { padding: 0 20px; height: 60px; }
+      .nav-brand-word { font-size: 18px; }
+      .nav-brand-sub { display: none; }
+      .nav-brand img { height: 26px; }
+      .btn-back { font-size: 11.5px; padding: 6px 14px; }
+
+      /* Hero jurnal */
+      .jurnal-hero { padding: 32px 20px 28px; }
+      .jurnal-title { font-size: 32px; letter-spacing: -0.8px; line-height: 1.1; }
+      .jurnal-authors { font-size: 13px; }
+      .jurnal-meta { gap: 20px; padding: 18px 0; }
+
+      /* Body */
+      .jurnal-body { padding: 32px 20px 28px; }
+      .jurnal-abstract { font-size: 17px; line-height: 1.65; margin-bottom: 36px; }
+      .kw-section { margin-bottom: 36px; }
+
+      /* PDF */
+      .pdf-preview-wrap { height: 400px; }
+      .pdf-preview-wrap.expanded { height: 60vh; }
+      .pdf-toolbar { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+      .pdf-toolbar-actions { gap: 6px; }
+      .btn-outline, .btn-primary { font-size: 11px; padding: 5px 12px; }
+
+      /* CTA */
+      .jurnal-cta { flex-direction: column; align-items: flex-start; gap: 16px; padding: 28px 0 48px; }
+      .cta-actions { width: 100%; }
+      .btn-cta-dl, .btn-cta-ext { flex: 1; justify-content: center; font-size: 13px; padding: 10px 16px; }
+
+      /* Footer */
+      footer { padding: 20px; flex-direction: column; gap: 4px; align-items: flex-start; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-brand">
+    <img src="Logo.png" alt="Hikayat Journal Archive" />
+    <span style="display:flex;align-items:baseline;gap:8px;">
+      <span class="nav-brand-word">Hikayat</span>
+      <span class="nav-brand-sub">Journal Archive</span>
+    </span>
+  </a>
+  <a href="index.html" class="btn-back">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path d="M19 12H5M5 12l7 7M5 12l7-7"/>
+    </svg>
+    Kembali ke arsip
+  </a>
+</nav>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-dot"></div>
+  <p class="loading-label">Memuat jurnal</p>
+</div>
+
+<!-- ERROR -->
+<div class="error-screen" id="errorScreen">
+  <h2>Jurnal tidak ditemukan.</h2>
+  <p>Jurnal ini mungkin sudah dipindahkan atau tidak tersedia.<br>
+  <a href="index.html">← Kembali ke arsip</a></p>
+</div>
+
+<!-- KONTEN JURNAL -->
+<div id="jurnalContent" style="display:none;">
+
+  <!-- HERO -->
+  <header class="jurnal-hero">
+    <div class="jurnal-eyebrow">
+      <span class="badge" id="jBadge"></span>
+      <span class="jurnal-year" id="jYear"></span>
+    </div>
+    <h1 class="jurnal-title" id="jTitle"></h1>
+    <p class="jurnal-authors" id="jAuthors"></p>
+    <div class="jurnal-meta" id="jMeta"></div>
+  </header>
+
+  <!-- BODY -->
+  <main class="jurnal-body">
+
+    <!-- ABSTRAK -->
+    <section style="margin-bottom: 56px;">
+      <p class="section-label">Abstrak</p>
+      <p class="jurnal-abstract" id="jAbstract"></p>
+    </section>
+
+    <!-- KATA KUNCI -->
+    <section class="kw-section">
+      <p class="section-label">Kata Kunci</p>
+      <div class="kw-wrap" id="jKeywords"></div>
+    </section>
+
+    <!-- PDF VIEWER -->
+    <section class="pdf-section" id="pdfSection">
+      <p class="section-label">Dokumen</p>
+      <div class="pdf-viewer-wrap">
+        <div class="pdf-toolbar">
+          <span class="pdf-toolbar-label">Full text</span>
+          <div class="pdf-toolbar-actions">
+            <a href="#" class="btn-outline" id="btnOpenNew" target="_blank" rel="noopener">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Buka di tab baru
+            </a>
+            <a href="#" class="btn-primary" id="btnDownload" target="_blank" rel="noopener">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Unduh PDF
+            </a>
+          </div>
+        </div>
+        <div class="pdf-preview-wrap" id="pdfPreviewWrap">
+          <iframe class="pdf-frame" id="pdfFrame" title="Dokumen jurnal"></iframe>
+          <div class="pdf-fade" id="pdfFade"></div>
+        </div>
+        <div class="pdf-expand-bar" id="pdfExpandBar">
+          <button class="btn-expand" id="btnExpand" onclick="togglePdfExpand()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            Baca dokumen lengkap
+          </button>
+        </div>
+        <div class="pdf-unavailable" id="pdfUnavailable">
+          <p>Dokumen full text belum tersedia untuk jurnal ini.</p>
+          <a href="#" class="btn-cta-ext" id="btnLinkFallback" target="_blank" rel="noopener" style="display:none;">
+            Buka di sumber asli →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="jurnal-cta">
+      <p class="jurnal-cta-text">Temukan lebih banyak karya penelitian.</p>
+      <div class="cta-actions" id="jCtaActions"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2024 Hikayat Journal Archive</p>
+  <p>Ditenagai Google Sheets · Dihosting di GitHub Pages</p>
+</footer>
+
+<script>
+  // ── PDF EXPAND TOGGLE ──
+  function togglePdfExpand() {
+    const wrap = document.getElementById("pdfPreviewWrap");
+    const btn  = document.getElementById("btnExpand");
+    const bar  = document.getElementById("pdfExpandBar");
+
+    const isExpanded = wrap.classList.contains("expanded");
+
+    if (isExpanded) {
+      wrap.classList.remove("expanded");
+      btn.classList.remove("expanded");
+      btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg> Baca dokumen lengkap`;
+    } else {
+      wrap.classList.add("expanded");
+      btn.classList.add("expanded");
+      btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg> Tutup`;
+    }
+  }
+
+  // ── CONFIG — samakan dengan index.html ──
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS3NnGuIRou-yGn_Ly-YJFFwL18UWakhwrKK1UG0dIv_1KqaBICXdNUMzrRw3vczjFv44ZfTTjS-w7l/pub?gid=0&single=true&output=csv";
+
+  // ── BADGE CLASS ──
+  const BADGE = {
+    sains:"b-sains", sosial:"b-sosial", hukum:"b-hukum",
+    ekonomi:"b-ekonomi", teknologi:"b-teknologi",
+    kesehatan:"b-kesehatan", pendidikan:"b-pendidikan"
+  };
+  function badgeClass(b) {
+    if (!b) return "b-lain";
+    return BADGE[b.toLowerCase()] || "b-lain";
+  }
+
+  // ── PARSE CSV ──
+  function parseCSV(text) {
+    const lines = text.trim().split("\n");
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(",").map(h => h.replace(/"/g,"").trim().toLowerCase());
+    return lines.slice(1).map((line, idx) => {
+      const cols = []; let cur = "", inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') { inQ = !inQ; }
+        else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ""; }
+        else { cur += c; }
+      }
+      cols.push(cur.trim());
+      const obj = { id: idx + 1 };
+      headers.forEach((h, i) => { obj[h] = (cols[i] || "").replace(/^"|"$/g, "").trim(); });
+      return obj;
+    }).filter(r => r.judul);
+  }
+
+  // ── DRIVE CONVERTERS ──
+  function driveFileId(url) {
+    if (!url || url === "-" || url === "") return "";
+    const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (m1) return m1[1];
+    const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (m2) return m2[1];
+    return "";
+  }
+  function driveToPDF(url) {
+    const id = driveFileId(url);
+    if (!id) return "";
+    return `https://drive.google.com/file/d/${id}/preview`;
+  }
+  function driveDownload(url) {
+    const id = driveFileId(url);
+    if (!id) return "";
+    return `https://drive.google.com/uc?export=download&id=${id}`;
+  }
+
+  // ── RENDER ──
+  function renderJurnal(j) {
+    document.title = j.judul + " — Hikayat Journal Archive";
+
+    // Badge + tahun
+    const badge = document.getElementById("jBadge");
+    badge.textContent = j.bidang || "Umum";
+    badge.className = "badge " + badgeClass(j.bidang);
+    document.getElementById("jYear").textContent = j.tahun || "";
+
+    // Judul
+    document.getElementById("jTitle").textContent = j.judul;
+
+    // Penulis
+    const penulisArr = j.penulis.split(";").map(p => p.trim()).filter(Boolean);
+    document.getElementById("jAuthors").innerHTML =
+      penulisArr.map((p, i) =>
+        `<strong>${p}</strong>${i < penulisArr.length - 1 ? ' · ' : ''}`
+      ).join('');
+
+    // Meta
+    const metaItems = [];
+    if (j.bidang)       metaItems.push({ lbl: "Bidang", val: j.bidang });
+    if (j.tahun)        metaItems.push({ lbl: "Tahun", val: j.tahun });
+    if (j.doi)          metaItems.push({ lbl: "DOI", val: `<a href="https://doi.org/${j.doi}" target="_blank" rel="noopener">${j.doi}</a>` });
+    if (j.link && j.link !== "-") metaItems.push({ lbl: "Sumber", val: `<a href="${j.link}" target="_blank" rel="noopener">Lihat sumber asli →</a>` });
+
+    document.getElementById("jMeta").innerHTML = metaItems.map(m =>
+      `<div class="meta-item">
+        <span class="meta-lbl">${m.lbl}</span>
+        <span class="meta-val">${m.val}</span>
+      </div>`
+    ).join("");
+
+    // Abstrak
+    document.getElementById("jAbstract").textContent = j.abstrak || "Abstrak tidak tersedia.";
+
+    // Kata kunci
+    const kwEl = document.getElementById("jKeywords");
+    const kws = (j["kata kunci"] || "").split(";").filter(Boolean);
+    if (kws.length) {
+      kwEl.innerHTML = kws.map(k => `<span class="kw">${k.trim()}</span>`).join("");
+    } else {
+      kwEl.closest("section").style.display = "none";
+    }
+
+    // PDF viewer
+    const pdfPreviewUrl  = driveToPDF(j.pdf);
+    const pdfDownloadUrl = driveDownload(j.pdf);
+    const hasLink = j.link && j.link !== "-" && j.link !== "";
+
+    if (pdfPreviewUrl) {
+      document.getElementById("pdfFrame").src = pdfPreviewUrl;
+      document.getElementById("btnOpenNew").href    = pdfPreviewUrl.replace("/preview", "/view");
+      document.getElementById("btnDownload").href   = pdfDownloadUrl;
+    } else {
+      document.getElementById("pdfFrame").style.display = "none";
+      const unavail = document.getElementById("pdfUnavailable");
+      unavail.classList.add("show");
+      if (hasLink) {
+        const fallback = document.getElementById("btnLinkFallback");
+        fallback.href = j.link;
+        fallback.style.display = "inline-flex";
+      }
+    }
+
+    // CTA actions
+    const ctaEl = document.getElementById("jCtaActions");
+    let ctaHTML = `<a href="index.html" class="btn-cta-ext">← Kembali ke arsip</a>`;
+    if (pdfDownloadUrl) {
+      ctaHTML += `<a href="${pdfDownloadUrl}" class="btn-cta-dl" target="_blank" rel="noopener">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Unduh PDF
+      </a>`;
+    }
+    ctaEl.innerHTML = ctaHTML;
+
+    // Show content
+    document.getElementById("loadingScreen").style.display = "none";
+    document.getElementById("jurnalContent").style.display = "block";
+  }
+
+  // ── INIT ──
+  async function init() {
+    // Ambil ID dari URL: jurnal.html?id=3
+    const params = new URLSearchParams(window.location.search);
+    const id = parseInt(params.get("id"));
+
+    if (!id) {
+      document.getElementById("loadingScreen").style.display = "none";
+      document.getElementById("errorScreen").classList.add("show");
+      return;
+    }
+
+    try {
+      const res = await fetch(SHEET_CSV_URL);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const text = await res.text();
+      const data = parseCSV(text);
+      const jurnal = data.find(j => j.id === id);
+
+      if (!jurnal) throw new Error("Not found");
+      renderJurnal(jurnal);
+
+    } catch(e) {
+      console.error(e);
+      document.getElementById("loadingScreen").style.display = "none";
+      document.getElementById("errorScreen").classList.add("show");
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
