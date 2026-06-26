@@ -280,11 +280,68 @@
     .b-pendidikan { background:#fff9db; color:#896a00; }
     .b-lain       { background:#f1f3f5; color:#495057; }
 
-    /* ── ARTIKEL + NOTULENSI GRID ── */
-    .two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+    /* ── ARTIKEL + NOTULENSI — SEQUENTIAL SCROLL ── */
+    .content-sections {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content-section {
       border-bottom: 1px solid var(--paper-dim);
+    }
+
+    /* Artikel — accent strip kiri, lebar penuh */
+    .content-section.s-artikel .section-inner {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      min-height: 320px;
+    }
+
+    .section-label-col {
+      border-right: 1px solid var(--paper-dim);
+      padding: 52px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: sticky;
+      top: 68px;
+      align-self: start;
+    }
+
+    .section-label-col .col-title {
+      font-family: var(--f-display);
+      font-size: 22px; font-weight: 400;
+      letter-spacing: -0.4px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+    }
+
+    .section-label-col .section-link {
+      font-family: var(--f-mono); font-size: 10px;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--ink-faint); text-decoration: none;
+      transition: color var(--t);
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+    }
+    .section-label-col .section-link:hover { color: var(--accent); }
+
+    .section-items-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Notulensi — background sedikit berbeda, teks lebih lega */
+    .content-section.s-notulensi {
+      background: var(--white);
+    }
+
+    .content-section.s-notulensi .section-inner {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      min-height: 280px;
     }
 
     .col-section {
@@ -317,7 +374,7 @@
       cursor: pointer;
     }
     .col-item:last-child { border-bottom: none; }
-    .col-item:hover { background: var(--white); }
+    .col-item:hover { background: var(--paper-dim); }
 
     .col-item-date {
       font-family: var(--f-mono); font-size: 9px;
@@ -390,8 +447,21 @@
       .featured-main { padding: 28px 20px; border-right: none; border-bottom: 1px solid var(--paper-dim); }
       .featured-side-item { padding: 20px 20px; }
 
-      .two-col { grid-template-columns: 1fr; }
-      .col-section:first-child { border-right: none; border-bottom: 1px solid var(--paper-dim); }
+      .content-section.s-artikel .section-inner,
+      .content-section.s-notulensi .section-inner { grid-template-columns: 1fr; }
+      .section-label-col { 
+        position: static; 
+        writing-mode: horizontal-tb;
+        flex-direction: row;
+        padding: 28px 20px 16px;
+        border-right: none;
+        border-bottom: 1px solid var(--paper-dim);
+      }
+      .section-label-col .col-title,
+      .section-label-col .section-link {
+        writing-mode: horizontal-tb;
+        transform: none;
+      }
       .col-header { padding: 28px 20px 16px; }
       .col-item { padding: 20px 20px; }
       .col-empty { padding: 32px 20px; }
@@ -466,29 +536,39 @@
   <!-- diisi JS -->
 </div>
 
-<!-- ARTIKEL + NOTULENSI -->
-<div class="two-col">
+<!-- ARTIKEL + NOTULENSI — SEQUENTIAL SCROLL -->
+<div class="content-sections">
+
   <!-- ARTIKEL -->
-  <div class="col-section">
-    <div class="col-header">
-      <span class="col-title">Artikel</span>
-      <a href="artikel/index.html" class="section-link">Lihat semua →</a>
-    </div>
-    <div class="col-items" id="featArtikel">
-      <!-- diisi JS -->
+  <div class="content-section s-artikel">
+    <div class="section-inner">
+      <div class="section-label-col">
+        <span class="col-title">Artikel</span>
+        <a href="artikel/index.html" class="section-link">Lihat semua →</a>
+      </div>
+      <div class="section-items-col">
+        <div class="col-items" id="featArtikel">
+          <!-- diisi JS -->
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- NOTULENSI -->
-  <div class="col-section">
-    <div class="col-header">
-      <span class="col-title">Notulensi Majelis</span>
-      <a href="notulensi/index.html" class="section-link">Lihat semua →</a>
-    </div>
-    <div class="col-items" id="featNotulensi">
-      <!-- diisi JS -->
+  <div class="content-section s-notulensi">
+    <div class="section-inner">
+      <div class="section-label-col">
+        <span class="col-title">Notulensi Majelis</span>
+        <a href="notulensi/index.html" class="section-link">Lihat semua →</a>
+      </div>
+      <div class="section-items-col">
+        <div class="col-items" id="featNotulensi">
+          <!-- diisi JS -->
+        </div>
+      </div>
     </div>
   </div>
+
 </div>
 
 <!-- FOOTER -->
