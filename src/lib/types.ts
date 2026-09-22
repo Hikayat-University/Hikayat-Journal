@@ -72,9 +72,18 @@ export type Survey = {
   updated_at: string;
 };
 
+export type SurveySection = {
+  id: string;
+  survey_id: string;
+  position: number;
+  title: string;
+  description: string | null;
+};
+
 export type SurveyQuestion = {
   id: string;
   survey_id: string;
+  section_id: string | null;
   position: number;
   question_text: string;
   question_type: QuestionType;
