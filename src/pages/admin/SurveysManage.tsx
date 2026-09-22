@@ -93,6 +93,28 @@ export function SurveysManage() {
       return;
     }
 
+    const { data: sections } = await supabase
+      .from('survey_sections')
+      .select('*')
+      .eq('survey_id', s.id)
+      .order('position', { ascending: true });
+
+    const sectionIdMap: Record<string, string> = {};
+    if (sections && sections.length) {
+      for (const sec of sections as { id: string; position: number; title: string; description: string | null }[]) {
+        const { data: newSec, error: secErr } = await supabase
+          .from('survey_sections')
+          .insert({ survey_id: newSurvey.id, position: sec.position, title: sec.title, description: sec.description })
+          .select()
+          .single();
+        if (secErr) {
+          setError(`Angket terduplikat, tapi fase gagal disalin: ${secErr.message}`);
+          continue;
+        }
+        if (newSec) sectionIdMap[sec.id] = newSec.id;
+      }
+    }
+
     const { data: questions } = await supabase
       .from('survey_questions')
       .select('*')
@@ -102,6 +124,7 @@ export function SurveysManage() {
     if (questions && questions.length) {
       const rows = (questions as SurveyQuestion[]).map((q) => ({
         survey_id: newSurvey.id,
+        section_id: q.section_id ? sectionIdMap[q.section_id] ?? null : null,
         position: q.position,
         question_text: q.question_text,
         question_type: q.question_type,
