@@ -92,7 +92,7 @@ export function SurveyFill() {
     setPageIndex((i) => Math.max(0, i - 1));
   }
 
-  async function handleSubmit() {
+    async function handleSubmit() {
     if (!survey) return;
     if (currentPageMissingRequired()) {
       setError('Mohon lengkapi semua pertanyaan wajib di fase ini.');
@@ -113,7 +113,7 @@ export function SurveyFill() {
       .single();
 
     if (respErr || !response) {
-      setError('Gagal mengirim jawaban. Coba lagi.');
+      setError(`Gagal mengirim jawaban: ${respErr?.message ?? 'respons tidak tersimpan'}`);
       setSubmitting(false);
       return;
     }
@@ -133,11 +133,12 @@ export function SurveyFill() {
     const { error: ansErr } = await supabase.from('survey_answers').insert(rows);
     setSubmitting(false);
     if (ansErr) {
-      setError('Gagal mengirim jawaban. Coba lagi.');
+      setError(`Gagal mengirim jawaban: ${ansErr.message}`);
       return;
     }
     setSubmitted(true);
   }
+
 
   if (survey === undefined) {
     return <div className="container" style={{ padding: 80 }}>Memuat…</div>;
