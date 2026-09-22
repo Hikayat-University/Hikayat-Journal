@@ -10,9 +10,14 @@ export function SurveysManage() {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [title, setTitle] = useState('');
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    const { data } = await supabase.from('surveys').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('surveys').select('*').order('created_at', { ascending: false });
+    if (error) {
+      setError(`Gagal memuat daftar angket: ${error.message}`);
+      return;
+    }
     setSurveys((data as Survey[]) ?? []);
   }
 
@@ -23,14 +28,23 @@ export function SurveysManage() {
   async function handleCreate() {
     if (!title.trim()) return;
     setCreating(true);
-    await supabase.from('surveys').insert({ title, created_by: session?.user.id });
-    setTitle('');
+    setError(null);
+    const { error } = await supabase.from('surveys').insert({ title, created_by: session?.user.id });
     setCreating(false);
+    if (error) {
+      setError(`Gagal membuat angket: ${error.message}`);
+      return;
+    }
+    setTitle('');
     load();
   }
 
   async function toggleOpen(s: Survey) {
-    await supabase.from('surveys').update({ is_open: !s.is_open }).eq('id', s.id);
+    const { error } = await supabase.from('surveys').update({ is_open: !s.is_open }).eq('id', s.id);
+    if (error) {
+      setError(`Gagal mengubah status: ${error.message}`);
+      return;
+    }
     load();
   }
 
@@ -39,6 +53,12 @@ export function SurveysManage() {
   return (
     <AdminLayout>
       <h1 style={{ fontSize: 28, marginBottom: 24 }}>Angket Riset</h1>
+
+      {error && (
+        <div className="card" style={{ marginBottom: 20, borderColor: 'var(--accent)', color: 'var(--accent)' }}>
+          {error}
+        </div>
+      )}
 
       <div className="card" style={{ marginBottom: 32, display: 'flex', gap: 8 }}>
         <input placeholder="Judul angket baru…" value={title} onChange={(e) => setTitle(e.target.value)} />
