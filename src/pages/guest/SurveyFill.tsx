@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
-import type { Survey, SurveyQuestion } from '../../lib/types';
+import type { Survey, SurveyQuestion, SurveySection } from '../../lib/types';
 
 type AnswerValue = string | string[] | number | null;
 
+// Satu "halaman" pengisian: fase asli, atau pertanyaan tanpa fase yang
+// ditampilkan sebagai halaman tanpa judul (kompatibel dengan angket lama).
+type Page = { id: string | null; title: string | null; description: string | null; questions: SurveyQuestion[] };
+
 export function SurveyFill() {
   const { slug } = useParams<{ slug: string }>();
-  const [survey, setSurvey] = useState<Survey | null | undefined>(undefined); // undefined = loading
-  const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
+  const [survey, setSurvey] = useState<Survey | null | undefined>(undefined);
+  const [pages, setPages] = useState<Page[]>([]);
+  const [pageIndex, setPageIndex] = useState(0);
   const [consented, setConsented] = useState(false);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [email, setEmail] = useState('');
@@ -26,14 +31,36 @@ export function SurveyFill() {
       .maybeSingle()
       .then(async ({ data }) => {
         setSurvey((data as Survey) ?? null);
-        if (data) {
-          const { data: qs } = await supabase
-            .from('survey_questions')
-            .select('*')
-            .eq('survey_id', data.id)
-            .order('position', { ascending: true });
-          setQuestions((qs as SurveyQuestion[]) ?? []);
+        if (!data) return;
+
+        const [{ data: secs }, { data: qs }] = await Promise.all([
+          supabase.from('survey_sections').select('*').eq('survey_id', data.id).order('position', { ascending: true }),
+          supabase.from('survey_questions').select('*').eq('survey_id', data.id).order('position', { ascending: true }),
+        ]);
+
+        const sections = (secs as SurveySection[]) ?? [];
+        const questions = (qs as SurveyQuestion[]) ?? [];
+
+        if (sections.length === 0) {
+          // Angket tanpa fase: satu halaman berisi semua pertanyaan, seperti sebelumnya.
+          setPages([{ id: null, title: null, description: null, questions }]);
+          return;
         }
+
+        const built: Page[] = [];
+        const ungrouped = questions.filter((q) => !q.section_id);
+        if (ungrouped.length > 0) {
+          built.push({ id: 'ungrouped', title: null, description: null, questions: ungrouped });
+        }
+        for (const sec of sections) {
+          built.push({
+            id: sec.id,
+            title: sec.title,
+            description: sec.description,
+            questions: questions.filter((q) => q.section_id === sec.id),
+          });
+        }
+        setPages(built);
       });
   }, [slug]);
 
@@ -41,19 +68,40 @@ export function SurveyFill() {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }
 
-  async function handleSubmit() {
-    if (!survey) return;
-    const missingRequired = questions.some((q) => {
+  function currentPageMissingRequired(): boolean {
+    const page = pages[pageIndex];
+    if (!page) return false;
+    return page.questions.some((q) => {
       if (!q.is_required) return false;
       const v = answers[q.id];
       return v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
     });
-    if (missingRequired) {
-      setError('Mohon lengkapi semua pertanyaan wajib.');
+  }
+
+  function handleNext() {
+    if (currentPageMissingRequired()) {
+      setError('Mohon lengkapi semua pertanyaan wajib di fase ini.');
+      return;
+    }
+    setError(null);
+    setPageIndex((i) => i + 1);
+  }
+
+  function handleBack() {
+    setError(null);
+    setPageIndex((i) => Math.max(0, i - 1));
+  }
+
+  async function handleSubmit() {
+    if (!survey) return;
+    if (currentPageMissingRequired()) {
+      setError('Mohon lengkapi semua pertanyaan wajib di fase ini.');
       return;
     }
     setError(null);
     setSubmitting(true);
+
+    const allQuestions = pages.flatMap((p) => p.questions);
 
     const { data: response, error: respErr } = await supabase
       .from('survey_responses')
@@ -70,7 +118,7 @@ export function SurveyFill() {
       return;
     }
 
-    const rows = questions.map((q) => {
+    const rows = allQuestions.map((q) => {
       const v = answers[q.id];
       return {
         response_id: response.id,
@@ -127,29 +175,63 @@ export function SurveyFill() {
     );
   }
 
+  const page = pages[pageIndex];
+  const isMultiPage = pages.length > 1;
+  const isLastPage = pageIndex === pages.length - 1;
+
   return (
     <div className="container" style={{ padding: '64px 24px', maxWidth: 640 }}>
       <h1 style={{ fontSize: 30, marginBottom: 8 }}>{survey.title}</h1>
       {survey.description && (
-        <p style={{ color: 'var(--ink-light)', marginBottom: 32, lineHeight: 1.6 }}>{survey.description}</p>
+        <p style={{ color: 'var(--ink-light)', marginBottom: 24, lineHeight: 1.6 }}>{survey.description}</p>
       )}
 
-      {!survey.is_anonymous && (
+      {isMultiPage && (
+        <div style={{ fontSize: 13, color: 'var(--ink-faint)', marginBottom: 16 }}>
+          Fase {pageIndex + 1} dari {pages.length}
+        </div>
+      )}
+
+      {!survey.is_anonymous && pageIndex === 0 && (
         <div className="field">
           <label>Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
       )}
 
-      {questions.map((q, idx) => (
+      {page?.title && (
+        <div className="card" style={{ marginBottom: 20, background: 'var(--paper-dim)' }}>
+          <h2 style={{ fontSize: 20, marginBottom: page.description ? 10 : 0 }}>{page.title}</h2>
+          {page.description && (
+            <div style={{ fontSize: 14, color: 'var(--ink-light)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              {page.description}
+            </div>
+          )}
+        </div>
+      )}
+
+      {page?.questions.map((q, idx) => (
         <QuestionField key={q.id} index={idx + 1} question={q} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} />
       ))}
 
       {error && <p className="error-text" style={{ marginBottom: 16 }}>{error}</p>}
 
-      <button className="btn btn-accent" onClick={handleSubmit} disabled={submitting}>
-        {submitting ? 'Mengirim…' : 'Kirim Jawaban'}
-      </button>
+      <div style={{ display: 'flex', gap: 8 }}>
+        {isMultiPage && pageIndex > 0 && (
+          <button className="btn btn-outline" onClick={handleBack} disabled={submitting}>
+            Kembali
+          </button>
+        )}
+        {isLastPage ? (
+          <button className="btn btn-accent" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? 'Mengirim…' : 'Kirim Jawaban'}
+          </button>
+        ) : (
+          <button className="btn btn-accent" onClick={handleNext}>
+            Lanjut
+          </button>
+        )}
+      </div>
     </div>
   );
 }
