@@ -19,7 +19,7 @@ import { AdminManage } from './pages/admin/AdminManage';
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AuthProvider>
         <Routes>
           {/* Tamu */}
