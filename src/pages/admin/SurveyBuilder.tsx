@@ -114,6 +114,16 @@ export function SurveyBuilder() {
       <div className="card" style={{ marginBottom: 24 }}>
         <h3 style={{ marginBottom: 16 }}>Pengaturan</h3>
         <div className="field">
+          <label>Judul Angket</label>
+          <input
+            defaultValue={survey.title}
+            onBlur={(e) => {
+              const next = e.target.value.trim();
+              if (next && next !== survey.title) updateSurveyField({ title: next });
+            }}
+          />
+        </div>
+        <div className="field">
           <label>Deskripsi</label>
           <textarea
             rows={2}
