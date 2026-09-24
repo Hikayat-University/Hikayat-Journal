@@ -84,6 +84,10 @@ export function ArticlesManage() {
         <div className="field">
           <label>Isi Artikel</label>
           <textarea rows={8} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
+          <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 6 }}>
+            Mendukung Markdown: <code>## Subjudul</code>, <code>**tebal**</code>, <code>*miring*</code>,{' '}
+            <code>[teks](https://tautan)</code>, <code>![keterangan](https://url-gambar)</code>, daftar dengan <code>- </code>.
+          </div>
         </div>
         <div className="field">
           <label>Status</label>

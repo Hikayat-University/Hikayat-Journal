@@ -4,8 +4,11 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 
 import { Home } from './pages/guest/Home';
 import { JournalList } from './pages/guest/JournalList';
+import { JournalDetail } from './pages/guest/JournalDetail';
 import { ArticleList } from './pages/guest/ArticleList';
+import { ArticleDetail } from './pages/guest/ArticleDetail';
 import { SurveyFill } from './pages/guest/SurveyFill';
+import { NotFound } from './pages/guest/NotFound';
 
 import { Login } from './pages/admin/Login';
 import { Dashboard } from './pages/admin/Dashboard';
@@ -25,7 +28,9 @@ export default function App() {
           {/* Tamu */}
           <Route path="/" element={<Home />} />
           <Route path="/jurnal" element={<JournalList />} />
+          <Route path="/jurnal/:id" element={<JournalDetail />} />
           <Route path="/artikel" element={<ArticleList />} />
+          <Route path="/artikel/:id" element={<ArticleDetail />} />
           <Route path="/angket/:slug" element={<SurveyFill />} />
 
           {/* Admin */}
@@ -38,6 +43,8 @@ export default function App() {
           <Route path="/admin/angket/:id/edit" element={<ProtectedRoute><SurveyBuilder /></ProtectedRoute>} />
           <Route path="/admin/angket/:id/hasil" element={<ProtectedRoute><SurveyResults /></ProtectedRoute>} />
           <Route path="/admin/pengguna" element={<ProtectedRoute><AdminManage /></ProtectedRoute>} />
+
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
