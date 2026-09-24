@@ -3,6 +3,8 @@ export type Profile = {
   full_name: string | null;
   role: 'admin' | 'owner';
   created_at: string;
+  /** Terisi kalau admin dinonaktifkan (migrasi 0005). */
+  disabled_at?: string | null;
 };
 
 export type ContentStatus = 'draft' | 'published';
