@@ -169,7 +169,7 @@ export function SurveysManage() {
 
       <div className="card" style={{ marginBottom: 32, display: 'flex', gap: 8 }}>
         <input placeholder="Judul angket baru…" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <button className="btn btn-accent" onClick={handleCreate} disabled={creating}>
+        <button className="btn btn-accent" style={{ whiteSpace: 'nowrap' }} onClick={handleCreate} disabled={creating}>
           Buat Angket
         </button>
       </div>
@@ -177,7 +177,7 @@ export function SurveysManage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {surveys.map((s) => (
           <div key={s.id} className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 16 }}>
+            <div className="admin-row" style={{ marginBottom: 12 }}>
               <div style={{ flex: 1 }}>
                 {editingId === s.id ? (
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -198,7 +198,7 @@ export function SurveysManage() {
                 )}
               </div>
               {editingId !== s.id && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <div className="row-actions" style={{ flexShrink: 1 }}>
                   <Link to={`/admin/angket/${s.id}/edit`} className="btn btn-outline">
                     Kelola Pertanyaan
                   </Link>
@@ -251,9 +251,9 @@ export function SurveysManage() {
               </div>
             )}
 
-            <div style={{ fontSize: 13, color: 'var(--ink-light)', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 13, color: 'var(--ink-light)', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
               Link unlisted:
-              <code style={{ background: 'var(--paper-dim)', padding: '2px 8px', borderRadius: 6 }}>
+              <code style={{ background: 'var(--paper-dim)', padding: '2px 8px', borderRadius: 6, overflowWrap: 'anywhere', minWidth: 0 }}>
                 {linkFor(s.slug)}
               </code>
               <button

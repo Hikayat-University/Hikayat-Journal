@@ -109,11 +109,7 @@ export function AdminManage() {
           const isSelf = p.id === session?.user.id;
           const disabled = !!p.disabled_at;
           return (
-            <div
-              key={p.id}
-              className="card"
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, opacity: disabled ? 0.6 : 1 }}
-            >
+            <div key={p.id} className="card admin-row" style={{ opacity: disabled ? 0.6 : 1 }}>
               <div>
                 <div style={{ fontWeight: 600 }}>
                   {p.full_name}

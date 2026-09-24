@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePageMeta } from '../lib/usePageMeta';
 
@@ -16,46 +16,59 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
   usePageMeta('Admin');
   const navigate = useNavigate();
+  const location = useLocation();
+  // Di layar kecil sidebar jadi laci yang dibuka lewat tombol menu.
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => setMenuOpen(false), [location.pathname]);
 
   async function handleSignOut() {
     await signOut();
     navigate('/');
   }
 
+  const brand = (
+    <>
+      <img src="/logo.png" alt="Hikayat University" />
+      Hikayat University Archive
+    </>
+  );
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside
-        style={{
-          width: 240,
-          flexShrink: 0,
-          background: 'var(--ink)',
-          color: 'var(--white)',
-          padding: '24px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--f-display)', fontSize: 18, lineHeight: 1.2, marginBottom: 32, padding: '0 8px' }}>
-          <img src="/logo.png" alt="Hikayat University" style={{ width: 32, height: 32 }} />
-          Hikayat University Archive
+    <div className="admin-shell">
+      <header className="admin-topbar">
+        <button
+          className="admin-menu-btn"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Buka menu"
+          aria-expanded={menuOpen}
+          aria-controls="admin-sidebar"
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+        <div className="admin-brand">{brand}</div>
+      </header>
+
+      {menuOpen && <div className="admin-backdrop" onClick={() => setMenuOpen(false)} />}
+
+      <aside id="admin-sidebar" className={`admin-sidebar${menuOpen ? ' open' : ''}`}>
+        <div className="admin-brand" style={{ marginBottom: 32 }}>
+          {brand}
+          <button className="admin-close-btn" onClick={() => setMenuOpen(false)} aria-label="Tutup menu">
+            ×
+          </button>
         </div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+        <nav className="admin-nav">
           {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              end={l.end}
-              style={({ isActive }) => ({
-                padding: '10px 12px',
-                borderRadius: 8,
-                fontSize: 14,
-                color: isActive ? 'var(--ink)' : 'rgba(255,255,255,0.8)',
-                background: isActive ? 'var(--white)' : 'transparent',
-              })}
-            >
+            <NavLink key={l.to} to={l.to} end={l.end}>
               {l.label}
             </NavLink>
           ))}
+          <Link to="/" target="_blank" className="admin-nav-external">
+            Lihat situs ↗
+          </Link>
         </nav>
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 16, marginTop: 16 }}>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', padding: '0 8px', marginBottom: 8 }}>
@@ -66,7 +79,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </aside>
-      <main style={{ flex: 1, padding: 32, background: 'var(--paper)' }}>{children}</main>
+      <main className="admin-main">{children}</main>
     </div>
   );
 }
