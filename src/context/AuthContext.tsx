@@ -14,15 +14,26 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/** Admin = role admin/owner dan tidak dinonaktifkan. Sama dengan is_admin() di database. */
+function profileIsAdmin(p: Profile | null) {
+  return !!p && (p.role === 'admin' || p.role === 'owner') && !p.disabled_at;
+}
+
+async function fetchProfile(userId: string) {
+  const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+  return (data as Profile | null) ?? null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  // Profil beserta ID pemiliknya, supaya jelas profil milik sesi yang mana yang sudah dimuat.
+  const [loaded, setLoaded] = useState<{ userId: string; profile: Profile | null } | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      setLoading(false);
+      setSessionLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -32,41 +43,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  const userId = session?.user.id ?? null;
+
   useEffect(() => {
-    if (!session) {
-      setProfile(null);
+    if (!userId) {
+      setLoaded(null);
       return;
     }
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single()
-      .then(({ data }) => {
-        const p = data as Profile | null;
-        // Admin yang sudah dinonaktifkan tapi token lamanya belum kedaluwarsa langsung dikeluarkan.
-        if (p?.disabled_at) {
-          supabase.auth.signOut();
-          return;
-        }
-        setProfile(p);
-      });
-  }, [session]);
+    fetchProfile(userId).then((profile) => {
+      // Akun bukan admin atau sudah dinonaktifkan (tapi tokennya belum kedaluwarsa) langsung dikeluarkan.
+      if (!profileIsAdmin(profile)) supabase.auth.signOut();
+      setLoaded({ userId, profile });
+    });
+  }, [userId]);
 
   async function signInWithPassword(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) return { error: 'Email atau kata sandi salah.' };
+
+    const profile = await fetchProfile(data.user.id);
+    if (!profileIsAdmin(profile)) {
+      await supabase.auth.signOut();
+      return {
+        error: profile?.disabled_at
+          ? 'Akun ini sudah dinonaktifkan. Hubungi admin lain untuk mengaktifkannya lagi.'
+          : 'Akun ini tidak punya akses admin.',
+      };
+    }
+    return { error: null };
   }
 
   async function signOut() {
     await supabase.auth.signOut();
   }
 
+  const profile = loaded && loaded.userId === userId ? loaded.profile : null;
+
   const value: AuthContextValue = {
     session,
     profile,
-    isAdmin: !!session,
-    loading,
+    isAdmin: !!session && profileIsAdmin(profile),
+    loading: sessionLoading || (!!userId && loaded?.userId !== userId),
     signInWithPassword,
     signOut,
   };

@@ -21,7 +21,7 @@ export function Login() {
     const { error } = await signInWithPassword(email, password);
     setLoading(false);
     if (error) {
-      setError('Email atau kata sandi salah.');
+      setError(error);
       return;
     }
     navigate('/admin');

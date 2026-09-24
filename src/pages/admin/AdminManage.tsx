@@ -115,7 +115,7 @@ export function AdminManage() {
                   {p.full_name}
                   {isSelf && <span style={{ fontWeight: 400, color: 'var(--ink-light)' }}> (kamu)</span>}
                 </div>
-                <span className="badge">{p.role === 'owner' ? 'Owner' : 'Admin'}</span>{' '}
+                <span className="badge">{p.role === 'owner' ? 'Owner' : p.role === 'admin' ? 'Admin' : 'Bukan admin'}</span>{' '}
                 {disabled && (
                   <span className="badge" title={`Sejak ${new Date(p.disabled_at!).toLocaleDateString('id-ID')}`}>
                     Nonaktif

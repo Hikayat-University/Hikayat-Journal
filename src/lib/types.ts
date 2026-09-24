@@ -1,7 +1,8 @@
 export type Profile = {
   id: string;
   full_name: string | null;
-  role: 'admin' | 'owner';
+  /** 'member': akun yang belum diangkat jadi admin (migrasi 0006). */
+  role: 'admin' | 'owner' | 'member';
   created_at: string;
   /** Terisi kalau admin dinonaktifkan (migrasi 0005). */
   disabled_at?: string | null;
