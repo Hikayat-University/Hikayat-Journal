@@ -138,12 +138,12 @@ export function SurveyFill() {
   }
 
   if (survey === undefined) {
-    return <div className="container" style={{ padding: 80 }}>Memuat…</div>;
+    return <div className="container page">Memuat…</div>;
   }
 
   if (survey === null) {
     return (
-      <div className="container" style={{ padding: 80, textAlign: 'center' }}>
+      <div className="container page" style={{ textAlign: 'center' }}>
         <h2>Angket tidak ditemukan</h2>
         <p style={{ color: 'var(--ink-light)' }}>Angket ini mungkin sudah ditutup atau tautannya keliru.</p>
       </div>
@@ -152,7 +152,7 @@ export function SurveyFill() {
 
   if (submitted) {
     return (
-      <div className="container" style={{ padding: 80, textAlign: 'center', maxWidth: 480 }}>
+      <div className="container page" style={{ textAlign: 'center', maxWidth: 480 }}>
         <h2>Terima kasih!</h2>
         <p style={{ color: 'var(--ink-light)' }}>Jawaban kamu sudah kami terima.</p>
       </div>
@@ -161,7 +161,7 @@ export function SurveyFill() {
 
   if (!consented && survey.consent_text) {
     return (
-      <div className="container" style={{ padding: '64px 24px', maxWidth: 640 }}>
+      <div className="container page" style={{ maxWidth: 640 }}>
         <h1 style={{ fontSize: 30, marginBottom: 16 }}>{survey.title}</h1>
         <div className="card" style={{ marginBottom: 24, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
           {survey.consent_text}
@@ -178,7 +178,7 @@ export function SurveyFill() {
   const isLastPage = pageIndex === pages.length - 1;
 
   return (
-    <div className="container" style={{ padding: '64px 24px', maxWidth: 640 }}>
+    <div className="container page" style={{ maxWidth: 640 }}>
       <h1 style={{ fontSize: 30, marginBottom: 8 }}>{survey.title}</h1>
       {survey.description && (
         <p style={{ color: 'var(--ink-light)', marginBottom: 24, lineHeight: 1.6 }}>{survey.description}</p>
@@ -310,9 +310,9 @@ function QuestionField({
       )}
 
       {question.question_type === 'likert' && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, color: 'var(--ink-faint)', width: 100 }}>{question.likert_labels?.low}</span>
-          <div style={{ display: 'flex', gap: 10 }}>
+        <div className="likert">
+          <span className="likert-label">{question.likert_labels?.low}</span>
+          <div className="likert-options">
             {Array.from({ length: question.likert_scale ?? 5 }, (_, i) => i + 1).map((n) => (
               <label key={n} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: 12 }}>
                 <input
@@ -325,7 +325,7 @@ function QuestionField({
               </label>
             ))}
           </div>
-          <span style={{ fontSize: 12, color: 'var(--ink-faint)', width: 100, textAlign: 'right' }}>
+          <span className="likert-label" style={{ textAlign: 'right' }}>
             {question.likert_labels?.high}
           </span>
         </div>

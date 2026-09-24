@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { GuestNav } from '../../components/GuestNav';
+import { GuestFooter, GuestNav } from '../../components/GuestNav';
 import { supabase } from '../../lib/supabaseClient';
 import type { Article, Journal } from '../../lib/types';
 
@@ -39,11 +39,11 @@ export function Home() {
       <GuestNav />
 
       {/* Hero */}
-      <section className="container" style={{ padding: '96px 24px 72px' }}>
+      <section className="container hero">
         <div className="eyebrow" style={{ marginBottom: 16 }}>
           Portal Akademik &amp; Portofolio
         </div>
-        <h1 style={{ fontSize: 56, lineHeight: 1.1, maxWidth: 760 }}>
+        <h1 className="hero-title">
           Dokumentasi Karya. <br />
           <span style={{ color: 'var(--accent)' }}>Riset yang Terbuka.</span>
         </h1>
@@ -51,7 +51,7 @@ export function Home() {
           Hikayat Journal menghimpun jurnal, artikel, dan hasil riset dari kegiatan akademik kami — terbuka
           untuk dibaca siapa saja.
         </p>
-        <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
+        <div className="btn-row" style={{ marginTop: 32 }}>
           <Link to="/jurnal" className="btn btn-accent">
             Jelajahi Jurnal →
           </Link>
@@ -73,8 +73,8 @@ export function Home() {
       </section>
 
       {/* Jurnal terbaru */}
-      <section className="container" style={{ padding: '72px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
+      <section className="container section">
+        <div className="section-head">
           <div>
             <div className="eyebrow">Jurnal Terbaru</div>
             <h2 style={{ fontSize: 32, marginTop: 8 }}>Karya Terkini</h2>
@@ -83,13 +83,13 @@ export function Home() {
             Lihat semua →
           </Link>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
+        <div className="card-grid">
           {journals.map((j) => (
-            <div key={j.id} className="card">
+            <Link key={j.id} to={`/jurnal/${j.id}`} className="card card-link">
               <h3 style={{ fontSize: 20, marginBottom: 8 }}>{j.title}</h3>
               {j.author && <div style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 10 }}>{j.author}</div>}
               <p style={{ fontSize: 14, color: 'var(--ink-light)', lineHeight: 1.5 }}>{j.abstract}</p>
-            </div>
+            </Link>
           ))}
           {journals.length === 0 && (
             <p style={{ color: 'var(--ink-faint)' }}>Belum ada jurnal yang diterbitkan.</p>
@@ -98,8 +98,8 @@ export function Home() {
       </section>
 
       {/* Artikel terbaru */}
-      <section className="container" style={{ padding: '0 24px 96px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
+      <section className="container section" style={{ paddingTop: 0 }}>
+        <div className="section-head">
           <div>
             <div className="eyebrow">Artikel Terbaru</div>
             <h2 style={{ fontSize: 32, marginTop: 8 }}>Catatan &amp; Pemikiran</h2>
@@ -108,19 +108,21 @@ export function Home() {
             Lihat semua →
           </Link>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
+        <div className="card-grid">
           {articles.map((a) => (
-            <div key={a.id} className="card">
+            <Link key={a.id} to={`/artikel/${a.id}`} className="card card-link">
               <h3 style={{ fontSize: 20, marginBottom: 8 }}>{a.title}</h3>
               {a.author && <div style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 10 }}>{a.author}</div>}
               <p style={{ fontSize: 14, color: 'var(--ink-light)', lineHeight: 1.5 }}>{a.excerpt}</p>
-            </div>
+            </Link>
           ))}
           {articles.length === 0 && (
             <p style={{ color: 'var(--ink-faint)' }}>Belum ada artikel yang diterbitkan.</p>
           )}
         </div>
       </section>
+
+      <GuestFooter />
     </div>
   );
 }

@@ -114,3 +114,240 @@ label {
   color: var(--accent);
   font-size: 13px;
 }
+
+img {
+  max-width: 100%;
+}
+
+/* ---------- Tamu: header & footer ---------- */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(250, 249, 246, 0.92);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--paper-mid);
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 72px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--f-display);
+  font-size: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.brand img {
+  width: 36px;
+  height: 36px;
+}
+
+.site-nav {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+
+.site-nav a {
+  color: var(--ink-light);
+}
+
+.site-nav a.active {
+  color: var(--ink);
+}
+
+.site-footer {
+  border-top: 1px solid var(--paper-mid);
+  padding: 24px 0;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
+.site-footer .container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.site-footer a:hover {
+  color: var(--ink-light);
+}
+
+/* ---------- Tamu: tata letak halaman ---------- */
+
+.section {
+  padding-top: 72px;
+  padding-bottom: 72px;
+}
+
+.page {
+  padding-top: 56px;
+  padding-bottom: 96px;
+}
+
+.page-narrow {
+  max-width: 760px;
+}
+
+.page-title {
+  font-size: clamp(30px, 6vw, 40px);
+  margin-top: 8px;
+  margin-bottom: 40px;
+}
+
+.hero {
+  padding-top: 96px;
+  padding-bottom: 72px;
+}
+
+.hero-title {
+  font-size: clamp(36px, 8vw, 56px);
+  line-height: 1.1;
+  max-width: 760px;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 20px;
+}
+
+.card-link {
+  display: block;
+  transition: border-color var(--t);
+}
+
+.card-link:hover {
+  border-color: var(--ink-faint);
+}
+
+.title-link:hover {
+  color: var(--accent);
+}
+
+.journal-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.journal-row > .btn {
+  align-self: center;
+  white-space: nowrap;
+}
+
+.likert {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.likert-label {
+  font-size: 12px;
+  color: var(--ink-faint);
+  width: 100px;
+}
+
+.likert-options {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  .site-header-inner {
+    height: 60px;
+  }
+
+  .brand {
+    font-size: 18px;
+  }
+
+  .brand img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .site-nav {
+    gap: 18px;
+  }
+
+  .section {
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
+
+  .page {
+    padding-top: 36px;
+    padding-bottom: 64px;
+  }
+
+  .page-title {
+    margin-bottom: 28px;
+  }
+
+  .hero {
+    padding-top: 56px;
+    padding-bottom: 48px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .journal-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .journal-row > .btn {
+    align-self: flex-start;
+  }
+
+  /* Label rendah/tinggi pindah ke atas, pilihan angka memenuhi lebar. */
+  .likert {
+    flex-wrap: wrap;
+  }
+
+  .likert-label {
+    width: auto;
+    flex: 1 1 40%;
+  }
+
+  .likert-options {
+    order: 1;
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+}

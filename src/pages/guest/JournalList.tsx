@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { GuestNav } from '../../components/GuestNav';
+import { Link } from 'react-router-dom';
+import { GuestFooter, GuestNav } from '../../components/GuestNav';
 import { supabase } from '../../lib/supabaseClient';
 import type { Journal } from '../../lib/types';
 
@@ -22,9 +23,9 @@ export function JournalList() {
   return (
     <div>
       <GuestNav />
-      <section className="container" style={{ padding: '56px 24px 96px' }}>
+      <section className="container page">
         <div className="eyebrow">Jurnal</div>
-        <h1 style={{ fontSize: 40, marginTop: 8, marginBottom: 40 }}>Seluruh Jurnal Terbit</h1>
+        <h1 className="page-title">Seluruh Jurnal Terbit</h1>
 
         {loading && <p style={{ color: 'var(--ink-faint)' }}>Memuat…</p>}
         {!loading && journals.length === 0 && (
@@ -33,14 +34,14 @@ export function JournalList() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {journals.map((j) => (
-            <div key={j.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', gap: 24 }}>
+            <div key={j.id} className="card journal-row">
               <div>
-                <h3 style={{ fontSize: 22, marginBottom: 6 }}>{j.title}</h3>
-                <div style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 10 }}>
-                  {j.author}
-                  {j.year ? ` · ${j.year}` : ''}
-                  {j.field ? ` · ${j.field}` : ''}
-                </div>
+                <h3 style={{ fontSize: 22, marginBottom: 6 }}>
+                  <Link to={`/jurnal/${j.id}`} className="title-link">
+                    {j.title}
+                  </Link>
+                </h3>
+                <JournalMeta journal={j} />
                 <p style={{ fontSize: 14, color: 'var(--ink-light)', lineHeight: 1.6, maxWidth: 640 }}>
                   {j.abstract}
                 </p>
@@ -49,7 +50,7 @@ export function JournalList() {
                 )}
               </div>
               {j.file_url && (
-                <a href={j.file_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ alignSelf: 'center', whiteSpace: 'nowrap' }}>
+                <a href={j.file_url} target="_blank" rel="noreferrer" className="btn btn-outline">
                   Unduh PDF
                 </a>
               )}
@@ -57,6 +58,17 @@ export function JournalList() {
           ))}
         </div>
       </section>
+      <GuestFooter />
+    </div>
+  );
+}
+
+export function JournalMeta({ journal }: { journal: Journal }) {
+  return (
+    <div style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 10 }}>
+      {journal.author}
+      {journal.year ? ` · ${journal.year}` : ''}
+      {journal.field ? ` · ${journal.field}` : ''}
     </div>
   );
 }
