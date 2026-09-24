@@ -1,14 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { GuestFooter, GuestNav } from '../../components/GuestNav';
+import { LOAD_ERROR, StatusMessage } from '../../components/StatusMessage';
 import { supabase } from '../../lib/supabaseClient';
 import type { Journal } from '../../lib/types';
+import { usePageMeta } from '../../lib/usePageMeta';
 import { JournalMeta } from './JournalList';
+
+// Kode Postgres untuk ID yang bukan UUID valid: diperlakukan sebagai "tidak ditemukan".
+const INVALID_ID = '22P02';
 
 export function JournalDetail() {
   const { id } = useParams();
   const [journal, setJournal] = useState<Journal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  usePageMeta(journal?.title ?? (loading ? null : 'Jurnal tidak ditemukan'), journal?.abstract);
 
   useEffect(() => {
     setLoading(true);
@@ -18,24 +26,24 @@ export function JournalDetail() {
       .eq('id', id ?? '')
       .eq('status', 'published')
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         setJournal((data as Journal | null) ?? null);
+        setError(!!error && error.code !== INVALID_ID);
         setLoading(false);
       });
   }, [id]);
 
   return (
-    <div>
+    <div className="guest-shell">
       <GuestNav />
       <section className="container page page-narrow">
         <Link to="/jurnal" className="btn btn-outline" style={{ marginBottom: 32 }}>
           ← Semua jurnal
         </Link>
 
-        {loading && <p style={{ color: 'var(--ink-faint)' }}>Memuat…</p>}
-        {!loading && !journal && (
-          <p style={{ color: 'var(--ink-faint)' }}>Jurnal tidak ditemukan atau belum diterbitkan.</p>
-        )}
+        {loading && <StatusMessage>Memuat…</StatusMessage>}
+        {!loading && error && <StatusMessage tone="error">{LOAD_ERROR}</StatusMessage>}
+        {!loading && !error && !journal && <StatusMessage>Jurnal tidak ditemukan atau belum diterbitkan.</StatusMessage>}
 
         {journal && (
           <article>

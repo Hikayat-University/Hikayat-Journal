@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { usePageMeta } from '../lib/usePageMeta';
 
 const links = [
   { to: '/admin', label: 'Ringkasan', end: true },
@@ -13,6 +14,7 @@ const links = [
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
+  usePageMeta('Admin');
   const navigate = useNavigate();
 
   async function handleSignOut() {

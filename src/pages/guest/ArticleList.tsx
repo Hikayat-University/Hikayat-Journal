@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GuestFooter, GuestNav } from '../../components/GuestNav';
+import { LOAD_ERROR, StatusMessage } from '../../components/StatusMessage';
 import { supabase } from '../../lib/supabaseClient';
 import type { Article } from '../../lib/types';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 export function ArticleList() {
+  usePageMeta('Artikel', 'Catatan dan pemikiran dari kegiatan akademik Hikayat University.');
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     supabase
@@ -14,23 +18,23 @@ export function ArticleList() {
       .select('*')
       .eq('status', 'published')
       .order('published_at', { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         setArticles((data as Article[]) ?? []);
+        setError(!!error);
         setLoading(false);
       });
   }, []);
 
   return (
-    <div>
+    <div className="guest-shell">
       <GuestNav />
       <section className="container page">
         <div className="eyebrow">Artikel</div>
         <h1 className="page-title">Seluruh Artikel</h1>
 
-        {loading && <p style={{ color: 'var(--ink-faint)' }}>Memuat…</p>}
-        {!loading && articles.length === 0 && (
-          <p style={{ color: 'var(--ink-faint)' }}>Belum ada artikel yang diterbitkan.</p>
-        )}
+        {loading && <StatusMessage>Memuat…</StatusMessage>}
+        {!loading && error && <StatusMessage tone="error">{LOAD_ERROR}</StatusMessage>}
+        {!loading && !error && articles.length === 0 && <StatusMessage>Belum ada artikel yang diterbitkan.</StatusMessage>}
 
         <div className="card-grid">
           {articles.map((a) => (

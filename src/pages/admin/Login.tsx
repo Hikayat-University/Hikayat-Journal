@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 export function Login() {
   const { isAdmin, signInWithPassword } = useAuth();
+  usePageMeta('Masuk admin');
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GuestFooter, GuestNav } from '../../components/GuestNav';
+import { LOAD_ERROR, StatusMessage } from '../../components/StatusMessage';
 import { supabase } from '../../lib/supabaseClient';
 import type { Article, Journal } from '../../lib/types';
+import { usePageMeta } from '../../lib/usePageMeta';
+
+type Latest<T> = { items: T[]; count: number; loading: boolean; error: boolean };
+
+const initial = { items: [], count: 0, loading: true, error: false };
 
 export function Home() {
-  const [journals, setJournals] = useState<Journal[]>([]);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [journalCount, setJournalCount] = useState(0);
-  const [articleCount, setArticleCount] = useState(0);
+  usePageMeta();
+  const [journals, setJournals] = useState<Latest<Journal>>(initial);
+  const [articles, setArticles] = useState<Latest<Article>>(initial);
 
   useEffect(() => {
     supabase
@@ -17,9 +22,8 @@ export function Home() {
       .eq('status', 'published')
       .order('published_at', { ascending: false })
       .limit(3)
-      .then(({ data, count }) => {
-        setJournals((data as Journal[]) ?? []);
-        setJournalCount(count ?? 0);
+      .then(({ data, count, error }) => {
+        setJournals({ items: (data as Journal[]) ?? [], count: count ?? 0, loading: false, error: !!error });
       });
 
     supabase
@@ -28,14 +32,13 @@ export function Home() {
       .eq('status', 'published')
       .order('published_at', { ascending: false })
       .limit(3)
-      .then(({ data, count }) => {
-        setArticles((data as Article[]) ?? []);
-        setArticleCount(count ?? 0);
+      .then(({ data, count, error }) => {
+        setArticles({ items: (data as Article[]) ?? [], count: count ?? 0, loading: false, error: !!error });
       });
   }, []);
 
   return (
-    <div>
+    <div className="guest-shell">
       <GuestNav />
 
       {/* Hero */}
@@ -67,8 +70,8 @@ export function Home() {
           className="container"
           style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 24 }}
         >
-          <Stat value={journalCount} label="Jurnal Terbit" />
-          <Stat value={articleCount} label="Artikel" />
+          <Stat value={journals} label="Jurnal Terbit" />
+          <Stat value={articles} label="Artikel" />
         </div>
       </section>
 
@@ -83,17 +86,15 @@ export function Home() {
             Lihat semua →
           </Link>
         </div>
+        <LatestStatus state={journals} empty="Belum ada jurnal yang diterbitkan." />
         <div className="card-grid">
-          {journals.map((j) => (
+          {journals.items.map((j) => (
             <Link key={j.id} to={`/jurnal/${j.id}`} className="card card-link">
               <h3 style={{ fontSize: 20, marginBottom: 8 }}>{j.title}</h3>
               {j.author && <div style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 10 }}>{j.author}</div>}
               <p style={{ fontSize: 14, color: 'var(--ink-light)', lineHeight: 1.5 }}>{j.abstract}</p>
             </Link>
           ))}
-          {journals.length === 0 && (
-            <p style={{ color: 'var(--ink-faint)' }}>Belum ada jurnal yang diterbitkan.</p>
-          )}
         </div>
       </section>
 
@@ -108,17 +109,15 @@ export function Home() {
             Lihat semua →
           </Link>
         </div>
+        <LatestStatus state={articles} empty="Belum ada artikel yang diterbitkan." />
         <div className="card-grid">
-          {articles.map((a) => (
+          {articles.items.map((a) => (
             <Link key={a.id} to={`/artikel/${a.id}`} className="card card-link">
               <h3 style={{ fontSize: 20, marginBottom: 8 }}>{a.title}</h3>
               {a.author && <div style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 10 }}>{a.author}</div>}
               <p style={{ fontSize: 14, color: 'var(--ink-light)', lineHeight: 1.5 }}>{a.excerpt}</p>
             </Link>
           ))}
-          {articles.length === 0 && (
-            <p style={{ color: 'var(--ink-faint)' }}>Belum ada artikel yang diterbitkan.</p>
-          )}
         </div>
       </section>
 
@@ -127,10 +126,19 @@ export function Home() {
   );
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
+function LatestStatus({ state, empty }: { state: Latest<unknown>; empty: string }) {
+  if (state.loading) return <StatusMessage>Memuat…</StatusMessage>;
+  if (state.error) return <StatusMessage tone="error">{LOAD_ERROR}</StatusMessage>;
+  if (state.items.length === 0) return <StatusMessage>{empty}</StatusMessage>;
+  return null;
+}
+
+function Stat({ value, label }: { value: Latest<unknown>; label: string }) {
   return (
     <div style={{ textAlign: 'center' }}>
-      <div style={{ fontFamily: 'var(--f-display)', fontSize: 36 }}>{value}</div>
+      <div style={{ fontFamily: 'var(--f-display)', fontSize: 36 }}>
+        {value.loading || value.error ? '–' : value.count}
+      </div>
       <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{label}</div>
     </div>
   );

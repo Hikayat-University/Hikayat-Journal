@@ -2,6 +2,7 @@
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import type { Survey, SurveyQuestion, SurveySection } from '../../lib/types';
+import { usePageMeta } from '../../lib/usePageMeta';
 
 type AnswerValue = string | string[] | number | null;
 
@@ -12,6 +13,7 @@ type Page = { id: string | null; title: string | null; description: string | nul
 export function SurveyFill() {
   const { slug } = useParams<{ slug: string }>();
   const [survey, setSurvey] = useState<Survey | null | undefined>(undefined);
+  usePageMeta(survey?.title ?? (survey === null ? 'Angket tidak ditemukan' : null), survey?.description);
   const [pages, setPages] = useState<Page[]>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [consented, setConsented] = useState(false);
