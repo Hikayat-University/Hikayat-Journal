@@ -35,9 +35,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           flexDirection: 'column',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--f-display)', fontSize: 18, marginBottom: 32, padding: '0 8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--f-display)', fontSize: 18, lineHeight: 1.2, marginBottom: 32, padding: '0 8px' }}>
           <img src="/logo.png" alt="Hikayat University" style={{ width: 32, height: 32 }} />
-          Hikayat Journal
+          Hikayat University Archive
         </div>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
           {links.map((l) => (

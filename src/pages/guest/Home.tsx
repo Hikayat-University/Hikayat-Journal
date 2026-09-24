@@ -51,7 +51,7 @@ export function Home() {
           <span style={{ color: 'var(--accent)' }}>Riset yang Terbuka.</span>
         </h1>
         <p style={{ color: 'var(--ink-light)', maxWidth: 560, fontSize: 17, marginTop: 20, lineHeight: 1.6 }}>
-          Hikayat Journal menghimpun jurnal, artikel, dan hasil riset dari kegiatan akademik kami — terbuka
+          Hikayat University Archive menghimpun jurnal, artikel, dan hasil riset dari kegiatan akademik kami — terbuka
           untuk dibaca siapa saja.
         </p>
         <div className="btn-row" style={{ marginTop: 32 }}>

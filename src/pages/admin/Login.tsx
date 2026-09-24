@@ -39,7 +39,7 @@ export function Login() {
     >
       <form onSubmit={handleSubmit} className="card" style={{ width: 360 }}>
         <div className="eyebrow" style={{ marginBottom: 8 }}>
-          Hikayat Journal
+          Hikayat University Archive
         </div>
         <h1 style={{ fontSize: 24, marginBottom: 24 }}>Masuk Admin</h1>
 

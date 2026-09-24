@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const SITE_NAME = 'Hikayat Journal';
+const SITE_NAME = 'Hikayat University Archive';
 const DEFAULT_DESCRIPTION =
   'Jurnal, artikel, dan hasil riset dari kegiatan akademik Hikayat University, terbuka untuk dibaca siapa saja.';
 

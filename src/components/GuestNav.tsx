@@ -6,7 +6,7 @@ export function GuestNav() {
       <div className="container site-header-inner">
         <Link to="/" className="brand">
           <img src="/logo.png" alt="Hikayat University" />
-          Hikayat Journal
+          Hikayat University Archive
         </Link>
         <nav className="site-nav">
           <NavLink to="/jurnal">Jurnal</NavLink>

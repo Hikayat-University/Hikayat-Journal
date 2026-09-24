@@ -7,7 +7,7 @@ import type { Journal } from '../../lib/types';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 export function JournalList() {
-  usePageMeta('Jurnal', 'Seluruh jurnal yang diterbitkan Hikayat Journal, bisa dicari per judul, penulis, bidang, dan tahun.');
+  usePageMeta('Jurnal', 'Seluruh jurnal yang diterbitkan Hikayat University Archive, bisa dicari per judul, penulis, bidang, dan tahun.');
   const [journals, setJournals] = useState<Journal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);

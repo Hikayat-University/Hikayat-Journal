@@ -29,9 +29,10 @@ a {
 }
 
 .eyebrow {
-  font-family: var(--f-mono);
-  font-size: 13px;
-  letter-spacing: 0.08em;
+  font-family: var(--f-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent);
 }
@@ -151,6 +152,11 @@ img {
 .brand img {
   width: 36px;
   height: 36px;
+  flex-shrink: 0;
+}
+
+.site-nav {
+  flex-shrink: 0;
 }
 
 .site-nav {
@@ -433,8 +439,12 @@ img {
     height: 60px;
   }
 
+  /* Nama situs boleh turun ke baris kedua supaya nav tetap muat. */
   .brand {
-    font-size: 18px;
+    font-size: 17px;
+    line-height: 1.15;
+    white-space: normal;
+    min-width: 0;
   }
 
   .brand img {
@@ -443,7 +453,8 @@ img {
   }
 
   .site-nav {
-    gap: 18px;
+    gap: 16px;
+    font-size: 15px;
   }
 
   .section {
@@ -496,5 +507,16 @@ img {
     order: 1;
     flex: 1 1 100%;
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 359px) {
+  .brand {
+    font-size: 15px;
+  }
+
+  .brand img {
+    width: 26px;
+    height: 26px;
   }
 }
