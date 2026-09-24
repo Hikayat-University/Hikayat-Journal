@@ -5,11 +5,27 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+// Browser mengirim preflight OPTIONS sebelum memanggil fungsi ini;
+// tanpa header CORS, panggilan dari halaman admin ditolak browser.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+function reply(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Tidak ada sesi.' }), { status: 401 });
+      return reply({ error: 'Tidak ada sesi.' }, 401);
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -22,12 +38,12 @@ Deno.serve(async (req: Request) => {
     });
     const { data: userData, error: userErr } = await callerClient.auth.getUser();
     if (userErr || !userData.user) {
-      return new Response(JSON.stringify({ error: 'Sesi tidak valid.' }), { status: 401 });
+      return reply({ error: 'Sesi tidak valid.' }, 401);
     }
 
     const { email, full_name } = await req.json();
     if (!email) {
-      return new Response(JSON.stringify({ error: 'Email wajib diisi.' }), { status: 400 });
+      return reply({ error: 'Email wajib diisi.' }, 400);
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
@@ -36,13 +52,11 @@ Deno.serve(async (req: Request) => {
     });
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 400 });
+      return reply({ error: error.message }, 400);
     }
 
-    return new Response(JSON.stringify({ ok: true, user: data.user }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return reply({ ok: true, user: data.user });
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+    return reply({ error: String(e) }, 500);
   }
 });

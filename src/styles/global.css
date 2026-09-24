@@ -520,3 +520,69 @@ img {
     height: 26px;
   }
 }
+
+/* ---------- Admin: pesan status ---------- */
+
+.alert {
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  border: 1px solid;
+}
+
+.alert-error {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.alert-success {
+  background: #eef5ee;
+  border-color: #9cc49c;
+  color: #2f5f2f;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+
+.current-file {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.current-file a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.question-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.question-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  padding: 8px 12px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

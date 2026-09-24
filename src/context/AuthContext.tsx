@@ -42,7 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('id', session.user.id)
       .single()
-      .then(({ data }) => setProfile(data as Profile | null));
+      .then(({ data }) => {
+        const p = data as Profile | null;
+        // Admin yang sudah dinonaktifkan tapi token lamanya belum kedaluwarsa langsung dikeluarkan.
+        if (p?.disabled_at) {
+          supabase.auth.signOut();
+          return;
+        }
+        setProfile(p);
+      });
   }, [session]);
 
   async function signInWithPassword(email: string, password: string) {

@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AdminLayout } from '../../components/AdminLayout';
+import { Notice, type NoticeState } from '../../components/Notice';
 import { supabase } from '../../lib/supabaseClient';
-import type { QuestionType, Survey, SurveyQuestion, SurveySection } from '../../lib/types';
+import type { Survey, SurveyQuestion, SurveySection } from '../../lib/types';
+import {
+  QuestionFields,
+  draftFromQuestion,
+  draftProblem,
+  draftToRow,
+  emptyDraft,
+  typeLabels,
+  type QuestionDraft,
+} from './QuestionFields';
 
-const typeLabels: Record<QuestionType, string> = {
-  short_text: 'Teks Singkat',
-  long_text: 'Teks Panjang',
-  single_choice: 'Pilihan Ganda',
-  multi_choice: 'Kotak Centang',
-  likert: 'Skala Likert',
-  dropdown: 'Dropdown',
-};
+type Editing = { id: string; draft: QuestionDraft; answerCount: number | null };
 
 export function SurveyBuilder() {
   const { id } = useParams<{ id: string }>();
@@ -22,10 +25,31 @@ export function SurveyBuilder() {
   const [newSectionTitle, setNewSectionTitle] = useState('');
   const [newSectionDesc, setNewSectionDesc] = useState('');
 
-  const [newType, setNewType] = useState<QuestionType>('short_text');
-  const [newText, setNewText] = useState('');
-  const [newOptions, setNewOptions] = useState('');
-  const [newSectionId, setNewSectionId] = useState<string>('');
+  const [newDraft, setNewDraft] = useState<QuestionDraft>(emptyDraft);
+  const [editing, setEditing] = useState<Editing | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<NoticeState>(null);
+
+  function fail(action: string, message: string) {
+    setNotice({ type: 'error', text: `${action}: ${message}` });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /** Jumlah jawaban responden untuk pertanyaan-pertanyaan ini; null kalau gagal dicek. */
+  async function countAnswers(questionIds: string[]) {
+    if (questionIds.length === 0) return 0;
+    const { count, error } = await supabase
+      .from('survey_answers')
+      .select('id', { count: 'exact', head: true })
+      .in('question_id', questionIds);
+    return error ? null : count ?? 0;
+  }
+
+  function answersWarning(count: number | null, subject: string) {
+    if (count === null) return `Jumlah jawaban tidak bisa dicek. Jawaban responden untuk ${subject} yang sudah masuk akan ikut terhapus permanen.`;
+    if (count === 0) return 'Belum ada jawaban responden yang ikut terhapus.';
+    return `${count} jawaban responden untuk ${subject} akan ikut terhapus permanen dan tidak bisa dikembalikan.`;
+  }
 
   async function load() {
     if (!id) return;
@@ -54,49 +78,102 @@ export function SurveyBuilder() {
 
   async function updateSurveyField(field: Partial<Survey>) {
     if (!id) return;
-    await supabase.from('surveys').update(field).eq('id', id);
+    const { error } = await supabase.from('surveys').update(field).eq('id', id);
+    if (error) return fail('Pengaturan gagal disimpan', error.message);
+    setNotice({ type: 'success', text: 'Pengaturan tersimpan.' });
     load();
   }
 
   async function addSection() {
     if (!id || !newSectionTitle.trim()) return;
-    await supabase.from('survey_sections').insert({
+    const { error } = await supabase.from('survey_sections').insert({
       survey_id: id,
       title: newSectionTitle,
       description: newSectionDesc || null,
       position: sections.length,
     });
+    if (error) return fail('Fase gagal ditambahkan', error.message);
+    setNotice(null);
     setNewSectionTitle('');
     setNewSectionDesc('');
     load();
   }
 
-  async function deleteSection(sectionId: string) {
-    if (!confirm('Hapus fase ini? Semua pertanyaan di dalamnya ikut terhapus.')) return;
-    await supabase.from('survey_sections').delete().eq('id', sectionId);
+  async function deleteSection(sec: SurveySection) {
+    const questionIds = questions.filter((q) => q.section_id === sec.id).map((q) => q.id);
+    const count = await countAnswers(questionIds);
+    const ok = confirm(
+      `Hapus fase "${sec.title}"? ${questionIds.length} pertanyaan di dalamnya ikut terhapus.\n\n${answersWarning(count, 'fase ini')}`
+    );
+    if (!ok) return;
+    const { error } = await supabase.from('survey_sections').delete().eq('id', sec.id);
+    if (error) return fail('Fase gagal dihapus', error.message);
+    setNotice({ type: 'success', text: `Fase "${sec.title}" dihapus.` });
     load();
   }
 
   async function addQuestion() {
-    if (!id || !newText.trim()) return;
-    const needsOptions = ['single_choice', 'multi_choice', 'dropdown'].includes(newType);
-    await supabase.from('survey_questions').insert({
-      survey_id: id,
-      section_id: newSectionId || null,
-      question_text: newText,
-      question_type: newType,
-      position: questions.length,
-      options: needsOptions ? newOptions.split(',').map((o) => o.trim()).filter(Boolean) : null,
-      likert_scale: newType === 'likert' ? 5 : null,
-      likert_labels: newType === 'likert' ? { low: 'Sangat tidak setuju', high: 'Sangat setuju' } : null,
-    });
-    setNewText('');
-    setNewOptions('');
+    if (!id || draftProblem(newDraft)) return;
+    setBusy(true);
+    const nextPosition = questions.reduce((max, q) => Math.max(max, q.position), -1) + 1;
+    const { error } = await supabase
+      .from('survey_questions')
+      .insert({ survey_id: id, position: nextPosition, ...draftToRow(newDraft) });
+    setBusy(false);
+    // Kalau gagal, isian dibiarkan supaya tidak perlu diketik ulang.
+    if (error) return fail('Pertanyaan gagal ditambahkan', error.message);
+    setNotice(null);
+    // Fase dan pengaturan likert dibiarkan, karena pertanyaan berikutnya biasanya serupa.
+    setNewDraft({ ...newDraft, text: '', options: '' });
     load();
   }
 
-  async function deleteQuestion(qid: string) {
-    await supabase.from('survey_questions').delete().eq('id', qid);
+  async function startEdit(q: SurveyQuestion) {
+    setEditing({ id: q.id, draft: draftFromQuestion(q), answerCount: null });
+    const count = await countAnswers([q.id]);
+    setEditing((cur) => (cur?.id === q.id ? { ...cur, answerCount: count } : cur));
+  }
+
+  async function saveEdit() {
+    if (!editing || draftProblem(editing.draft)) return;
+    setBusy(true);
+    const { error } = await supabase.from('survey_questions').update(draftToRow(editing.draft)).eq('id', editing.id);
+    setBusy(false);
+    if (error) return fail('Pertanyaan gagal disimpan', error.message);
+    setNotice({ type: 'success', text: 'Pertanyaan tersimpan.' });
+    setEditing(null);
+    load();
+  }
+
+  /** Tukar urutan dengan pertanyaan tetangga di fase yang sama. */
+  async function moveQuestion(q: SurveyQuestion, dir: -1 | 1) {
+    const ordered = [...questions].sort((a, b) => a.position - b.position);
+    const group = ordered.filter((x) => x.section_id === q.section_id);
+    const neighbor = group[group.findIndex((x) => x.id === q.id) + dir];
+    if (!neighbor) return;
+    const i = ordered.findIndex((x) => x.id === q.id);
+    const j = ordered.findIndex((x) => x.id === neighbor.id);
+    [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+
+    // Nomori ulang semuanya supaya posisi yang kembar atau bolong ikut rapi.
+    const changes = ordered.map((x, pos) => ({ id: x.id, pos, old: x.position })).filter((c) => c.pos !== c.old);
+    setBusy(true);
+    setQuestions(ordered.map((x, pos) => ({ ...x, position: pos })));
+    const results = await Promise.all(
+      changes.map((c) => supabase.from('survey_questions').update({ position: c.pos }).eq('id', c.id))
+    );
+    setBusy(false);
+    const err = results.find((r) => r.error)?.error;
+    if (err) fail('Urutan gagal disimpan', err.message);
+    load();
+  }
+
+  async function deleteQuestion(q: SurveyQuestion) {
+    const count = await countAnswers([q.id]);
+    if (!confirm(`Hapus pertanyaan "${q.question_text}"?\n\n${answersWarning(count, 'pertanyaan ini')}`)) return;
+    const { error } = await supabase.from('survey_questions').delete().eq('id', q.id);
+    if (error) return fail('Pertanyaan gagal dihapus', error.message);
+    setNotice({ type: 'success', text: 'Pertanyaan dihapus.' });
     load();
   }
 
@@ -110,6 +187,7 @@ export function SurveyBuilder() {
         ← Kembali ke Angket
       </Link>
       <h1 style={{ fontSize: 28, margin: '8px 0 24px' }}>{survey.title}</h1>
+      <Notice notice={notice} />
 
       <div className="card" style={{ marginBottom: 24 }}>
         <h3 style={{ marginBottom: 16 }}>Pengaturan</h3>
@@ -183,7 +261,7 @@ export function SurveyBuilder() {
                     {questions.filter((q) => q.section_id === sec.id).length} pertanyaan
                   </div>
                 </div>
-                <button className="btn btn-outline" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => deleteSection(sec.id)}>
+                <button className="btn btn-outline" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => deleteSection(sec)}>
                   Hapus
                 </button>
               </div>
@@ -211,62 +289,23 @@ export function SurveyBuilder() {
 
       <div className="card" style={{ marginBottom: 24 }}>
         <h3 style={{ marginBottom: 16 }}>Tambah Pertanyaan</h3>
-
-        {sections.length > 0 && (
-          <div className="field">
-            <label>Masuk ke fase mana</label>
-            <select value={newSectionId} onChange={(e) => setNewSectionId(e.target.value)}>
-              <option value="">— Tanpa fase (tampil di halaman umum) —</option>
-              {sections.map((sec, i) => (
-                <option key={sec.id} value={sec.id}>
-                  Fase {i + 1}: {sec.title}
-                </option>
-              ))}
-            </select>
-          </div>
+        <QuestionFields draft={newDraft} onChange={setNewDraft} sections={sections} />
+        {newDraft.text.trim() && draftProblem(newDraft) && (
+          <p className="error-text" style={{ marginBottom: 12 }}>{draftProblem(newDraft)}</p>
         )}
-
-        <div className="field">
-          <label>Pertanyaan</label>
-          <input value={newText} onChange={(e) => setNewText(e.target.value)} />
-        </div>
-        <div className="field">
-          <label>Tipe</label>
-          <select value={newType} onChange={(e) => setNewType(e.target.value as QuestionType)}>
-            {Object.entries(typeLabels).map(([val, lbl]) => (
-              <option key={val} value={val}>
-                {lbl}
-              </option>
-            ))}
-          </select>
-        </div>
-        {['single_choice', 'multi_choice', 'dropdown'].includes(newType) && (
-          <div className="field">
-            <label>Opsi (pisahkan dengan koma)</label>
-            <input value={newOptions} onChange={(e) => setNewOptions(e.target.value)} placeholder="Opsi A, Opsi B, Opsi C" />
-          </div>
-        )}
-        <button className="btn btn-accent" onClick={addQuestion}>
+        <button className="btn btn-accent" onClick={addQuestion} disabled={busy || !!draftProblem(newDraft)}>
           Tambah Pertanyaan
         </button>
       </div>
 
       {sections.length === 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {questions.map((q, i) => (
-            <QuestionRow key={q.id} q={q} index={i} onDelete={() => deleteQuestion(q.id)} />
-          ))}
-        </div>
+        renderGroup(questions)
       ) : (
         <>
           {ungrouped.length > 0 && (
             <div style={{ marginBottom: 20 }}>
               <h4 style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 8 }}>Tanpa fase</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {ungrouped.map((q, i) => (
-                  <QuestionRow key={q.id} q={q} index={i} onDelete={() => deleteQuestion(q.id)} />
-                ))}
-              </div>
+              {renderGroup(ungrouped)}
             </div>
           )}
           {sections.map((sec, si) => {
@@ -276,14 +315,11 @@ export function SurveyBuilder() {
                 <h4 style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 8 }}>
                   Fase {si + 1}: {sec.title}
                 </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {secQuestions.length === 0 && (
-                    <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>Belum ada pertanyaan di fase ini.</p>
-                  )}
-                  {secQuestions.map((q, i) => (
-                    <QuestionRow key={q.id} q={q} index={i} onDelete={() => deleteQuestion(q.id)} />
-                  ))}
-                </div>
+                {secQuestions.length === 0 ? (
+                  <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>Belum ada pertanyaan di fase ini.</p>
+                ) : (
+                  renderGroup(secQuestions)
+                )}
               </div>
             );
           })}
@@ -291,20 +327,73 @@ export function SurveyBuilder() {
       )}
     </AdminLayout>
   );
-}
 
-function QuestionRow({ q, index, onDelete }: { q: SurveyQuestion; index: number; onDelete: () => void }) {
-  return (
-    <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <div>
-        <div style={{ fontWeight: 600 }}>
-          {index + 1}. {q.question_text}
-        </div>
-        <span className="badge">{typeLabels[q.question_type]}</span>
+  function renderGroup(list: SurveyQuestion[]) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {list.map((q, i) =>
+          editing?.id === q.id ? (
+            <div key={q.id} className="card" style={{ borderColor: 'var(--accent)' }}>
+              <h4 style={{ fontSize: 15, marginBottom: 14 }}>Ubah pertanyaan {i + 1}</h4>
+              <QuestionFields
+                draft={editing.draft}
+                onChange={(draft) => setEditing({ ...editing, draft })}
+                sections={sections}
+                // Selama jumlah jawaban belum diketahui, tipe dikunci dulu.
+                lockType={editing.answerCount !== 0}
+                hasAnswers={!!editing.answerCount}
+              />
+              {draftProblem(editing.draft) && (
+                <p className="error-text" style={{ marginBottom: 12 }}>{draftProblem(editing.draft)}</p>
+              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-accent" onClick={saveEdit} disabled={busy || !!draftProblem(editing.draft)}>
+                  Simpan
+                </button>
+                <button className="btn btn-outline" onClick={() => setEditing(null)}>
+                  Batal
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div key={q.id} className="card question-row">
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600 }}>
+                  {i + 1}. {q.question_text}
+                </div>
+                <span className="badge">{typeLabels[q.question_type]}</span>{' '}
+                {!q.is_required && <span className="badge">Opsional</span>}
+              </div>
+              <div className="question-actions">
+                <button
+                  className="btn btn-outline icon-btn"
+                  onClick={() => moveQuestion(q, -1)}
+                  disabled={busy || i === 0}
+                  aria-label="Naikkan"
+                  title="Naikkan"
+                >
+                  ↑
+                </button>
+                <button
+                  className="btn btn-outline icon-btn"
+                  onClick={() => moveQuestion(q, 1)}
+                  disabled={busy || i === list.length - 1}
+                  aria-label="Turunkan"
+                  title="Turunkan"
+                >
+                  ↓
+                </button>
+                <button className="btn btn-outline" onClick={() => startEdit(q)} disabled={!!editing}>
+                  Ubah
+                </button>
+                <button className="btn btn-outline" onClick={() => deleteQuestion(q)}>
+                  Hapus
+                </button>
+              </div>
+            </div>
+          )
+        )}
       </div>
-      <button className="btn btn-outline" onClick={onDelete}>
-        Hapus
-      </button>
-    </div>
-  );
+    );
+  }
 }
