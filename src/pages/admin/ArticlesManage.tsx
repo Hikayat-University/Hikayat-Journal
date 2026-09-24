@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '../../components/AdminLayout';
+import { Notice, type NoticeState } from '../../components/Notice';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import type { Article, ContentStatus } from '../../lib/types';
+import { nextPublishedAt } from '../../lib/publishedAt';
 
 const empty: { title: string; author: string; excerpt: string; content: string; status: ContentStatus } = {
   title: '',
@@ -18,9 +20,14 @@ export function ArticlesManage() {
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<NoticeState>(null);
 
   async function load() {
-    const { data } = await supabase.from('articles').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('articles').select('*').order('created_at', { ascending: false });
+    if (error) {
+      setNotice({ type: 'error', text: `Gagal memuat daftar artikel: ${error.message}` });
+      return;
+    }
     setArticles((data as Article[]) ?? []);
   }
 
@@ -28,21 +35,29 @@ export function ArticlesManage() {
     load();
   }, []);
 
+  // Kalau gagal, isi form dibiarkan supaya artikel tidak perlu diketik ulang.
   async function handleSave() {
     setSaving(true);
+    setNotice(null);
+    const existing = editingId ? articles.find((a) => a.id === editingId) : undefined;
     const payload = {
       ...form,
-      published_at: form.status === 'published' ? new Date().toISOString() : null,
-      created_by: session?.user.id,
+      published_at: nextPublishedAt(form.status, existing?.published_at),
+      ...(editingId ? {} : { created_by: session?.user.id }),
     };
-    if (editingId) {
-      await supabase.from('articles').update(payload).eq('id', editingId);
-    } else {
-      await supabase.from('articles').insert(payload);
+    const { error } = editingId
+      ? await supabase.from('articles').update(payload).eq('id', editingId)
+      : await supabase.from('articles').insert(payload);
+
+    setSaving(false);
+    if (error) {
+      setNotice({ type: 'error', text: `Artikel gagal disimpan: ${error.message}` });
+      return;
     }
+
+    setNotice({ type: 'success', text: editingId ? 'Perubahan artikel tersimpan.' : 'Artikel baru tersimpan.' });
     setForm(empty);
     setEditingId(null);
-    setSaving(false);
     load();
   }
 
@@ -59,13 +74,19 @@ export function ArticlesManage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Hapus artikel ini?')) return;
-    await supabase.from('articles').delete().eq('id', id);
+    const { error } = await supabase.from('articles').delete().eq('id', id);
+    if (error) {
+      setNotice({ type: 'error', text: `Artikel gagal dihapus: ${error.message}` });
+      return;
+    }
+    setNotice({ type: 'success', text: 'Artikel dihapus.' });
     load();
   }
 
   return (
     <AdminLayout>
       <h1 style={{ fontSize: 28, marginBottom: 24 }}>Artikel</h1>
+      <Notice notice={notice} />
 
       <div className="card" style={{ marginBottom: 32 }}>
         <h3 style={{ marginBottom: 16 }}>{editingId ? 'Ubah Artikel' : 'Tulis Artikel Baru'}</h3>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AdminLayout } from '../../components/AdminLayout';
+import { Notice, type NoticeState } from '../../components/Notice';
 import { supabase } from '../../lib/supabaseClient';
 import type { QuestionType, Survey, SurveyQuestion, SurveySection } from '../../lib/types';
 
@@ -26,6 +27,28 @@ export function SurveyBuilder() {
   const [newText, setNewText] = useState('');
   const [newOptions, setNewOptions] = useState('');
   const [newSectionId, setNewSectionId] = useState<string>('');
+  const [notice, setNotice] = useState<NoticeState>(null);
+
+  function fail(action: string, message: string) {
+    setNotice({ type: 'error', text: `${action}: ${message}` });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /** Jumlah jawaban responden untuk pertanyaan-pertanyaan ini; null kalau gagal dicek. */
+  async function countAnswers(questionIds: string[]) {
+    if (questionIds.length === 0) return 0;
+    const { count, error } = await supabase
+      .from('survey_answers')
+      .select('id', { count: 'exact', head: true })
+      .in('question_id', questionIds);
+    return error ? null : count ?? 0;
+  }
+
+  function answersWarning(count: number | null, subject: string) {
+    if (count === null) return `Jumlah jawaban tidak bisa dicek. Jawaban responden untuk ${subject} yang sudah masuk akan ikut terhapus permanen.`;
+    if (count === 0) return 'Belum ada jawaban responden yang ikut terhapus.';
+    return `${count} jawaban responden untuk ${subject} akan ikut terhapus permanen dan tidak bisa dikembalikan.`;
+  }
 
   async function load() {
     if (!id) return;
@@ -54,33 +77,44 @@ export function SurveyBuilder() {
 
   async function updateSurveyField(field: Partial<Survey>) {
     if (!id) return;
-    await supabase.from('surveys').update(field).eq('id', id);
+    const { error } = await supabase.from('surveys').update(field).eq('id', id);
+    if (error) return fail('Pengaturan gagal disimpan', error.message);
+    setNotice({ type: 'success', text: 'Pengaturan tersimpan.' });
     load();
   }
 
   async function addSection() {
     if (!id || !newSectionTitle.trim()) return;
-    await supabase.from('survey_sections').insert({
+    const { error } = await supabase.from('survey_sections').insert({
       survey_id: id,
       title: newSectionTitle,
       description: newSectionDesc || null,
       position: sections.length,
     });
+    if (error) return fail('Fase gagal ditambahkan', error.message);
+    setNotice(null);
     setNewSectionTitle('');
     setNewSectionDesc('');
     load();
   }
 
-  async function deleteSection(sectionId: string) {
-    if (!confirm('Hapus fase ini? Semua pertanyaan di dalamnya ikut terhapus.')) return;
-    await supabase.from('survey_sections').delete().eq('id', sectionId);
+  async function deleteSection(sec: SurveySection) {
+    const questionIds = questions.filter((q) => q.section_id === sec.id).map((q) => q.id);
+    const count = await countAnswers(questionIds);
+    const ok = confirm(
+      `Hapus fase "${sec.title}"? ${questionIds.length} pertanyaan di dalamnya ikut terhapus.\n\n${answersWarning(count, 'fase ini')}`
+    );
+    if (!ok) return;
+    const { error } = await supabase.from('survey_sections').delete().eq('id', sec.id);
+    if (error) return fail('Fase gagal dihapus', error.message);
+    setNotice({ type: 'success', text: `Fase "${sec.title}" dihapus.` });
     load();
   }
 
   async function addQuestion() {
     if (!id || !newText.trim()) return;
     const needsOptions = ['single_choice', 'multi_choice', 'dropdown'].includes(newType);
-    await supabase.from('survey_questions').insert({
+    const { error } = await supabase.from('survey_questions').insert({
       survey_id: id,
       section_id: newSectionId || null,
       question_text: newText,
@@ -90,13 +124,20 @@ export function SurveyBuilder() {
       likert_scale: newType === 'likert' ? 5 : null,
       likert_labels: newType === 'likert' ? { low: 'Sangat tidak setuju', high: 'Sangat setuju' } : null,
     });
+    // Kalau gagal, teks pertanyaan dibiarkan supaya tidak perlu diketik ulang.
+    if (error) return fail('Pertanyaan gagal ditambahkan', error.message);
+    setNotice(null);
     setNewText('');
     setNewOptions('');
     load();
   }
 
-  async function deleteQuestion(qid: string) {
-    await supabase.from('survey_questions').delete().eq('id', qid);
+  async function deleteQuestion(q: SurveyQuestion) {
+    const count = await countAnswers([q.id]);
+    if (!confirm(`Hapus pertanyaan "${q.question_text}"?\n\n${answersWarning(count, 'pertanyaan ini')}`)) return;
+    const { error } = await supabase.from('survey_questions').delete().eq('id', q.id);
+    if (error) return fail('Pertanyaan gagal dihapus', error.message);
+    setNotice({ type: 'success', text: 'Pertanyaan dihapus.' });
     load();
   }
 
@@ -110,6 +151,7 @@ export function SurveyBuilder() {
         ← Kembali ke Angket
       </Link>
       <h1 style={{ fontSize: 28, margin: '8px 0 24px' }}>{survey.title}</h1>
+      <Notice notice={notice} />
 
       <div className="card" style={{ marginBottom: 24 }}>
         <h3 style={{ marginBottom: 16 }}>Pengaturan</h3>
@@ -183,7 +225,7 @@ export function SurveyBuilder() {
                     {questions.filter((q) => q.section_id === sec.id).length} pertanyaan
                   </div>
                 </div>
-                <button className="btn btn-outline" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => deleteSection(sec.id)}>
+                <button className="btn btn-outline" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => deleteSection(sec)}>
                   Hapus
                 </button>
               </div>
@@ -254,7 +296,7 @@ export function SurveyBuilder() {
       {sections.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {questions.map((q, i) => (
-            <QuestionRow key={q.id} q={q} index={i} onDelete={() => deleteQuestion(q.id)} />
+            <QuestionRow key={q.id} q={q} index={i} onDelete={() => deleteQuestion(q)} />
           ))}
         </div>
       ) : (
@@ -264,7 +306,7 @@ export function SurveyBuilder() {
               <h4 style={{ fontSize: 14, color: 'var(--ink-light)', marginBottom: 8 }}>Tanpa fase</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {ungrouped.map((q, i) => (
-                  <QuestionRow key={q.id} q={q} index={i} onDelete={() => deleteQuestion(q.id)} />
+                  <QuestionRow key={q.id} q={q} index={i} onDelete={() => deleteQuestion(q)} />
                 ))}
               </div>
             </div>
@@ -281,7 +323,7 @@ export function SurveyBuilder() {
                     <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>Belum ada pertanyaan di fase ini.</p>
                   )}
                   {secQuestions.map((q, i) => (
-                    <QuestionRow key={q.id} q={q} index={i} onDelete={() => deleteQuestion(q.id)} />
+                    <QuestionRow key={q.id} q={q} index={i} onDelete={() => deleteQuestion(q)} />
                   ))}
                 </div>
               </div>

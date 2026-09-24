@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { AdminLayout } from '../../components/AdminLayout';
 import { supabase } from '../../lib/supabaseClient';
+import { fetchAll } from '../../lib/fetchAll';
 import type { Survey, SurveyQuestion, SurveyResponse, SurveyAnswer } from '../../lib/types';
 
 export function SurveyResults() {
@@ -11,32 +12,49 @@ export function SurveyResults() {
   const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [answers, setAnswers] = useState<SurveyAnswer[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
-    supabase.from('surveys').select('*').eq('id', id).single().then(({ data }) => setSurvey(data as Survey));
-    supabase
-      .from('survey_questions')
-      .select('*')
-      .eq('survey_id', id)
-      .order('position', { ascending: true })
-      .then(({ data }) => setQuestions((data as SurveyQuestion[]) ?? []));
-    supabase
-      .from('survey_responses')
-      .select('*')
-      .eq('survey_id', id)
-      .then(async ({ data }) => {
-        const resp = (data as SurveyResponse[]) ?? [];
-        setResponses(resp);
-        if (resp.length) {
-          const { data: ans } = await supabase
+    async function load() {
+      const [s, q, r, a] = await Promise.all([
+        supabase.from('surveys').select('*').eq('id', id).single(),
+        supabase.from('survey_questions').select('*').eq('survey_id', id).order('position', { ascending: true }),
+        // Respons dan jawaban bisa lebih dari 1.000 baris, jadi diambil per halaman sampai habis.
+        fetchAll<SurveyResponse>((from, to) =>
+          supabase.from('survey_responses').select('*').eq('survey_id', id).order('id').range(from, to)
+        ),
+        // Jawaban difilter lewat relasi ke respons, bukan daftar ID yang bisa terlalu panjang untuk URL.
+        fetchAll<SurveyAnswer>((from, to) =>
+          supabase
             .from('survey_answers')
-            .select('*')
-            .in('response_id', resp.map((r) => r.id));
-          setAnswers((ans as SurveyAnswer[]) ?? []);
-        }
-      });
+            .select('*, survey_responses!inner(survey_id)')
+            .eq('survey_responses.survey_id', id)
+            .order('id')
+            .range(from, to)
+        ),
+      ]);
+
+      const failed = [s.error, q.error, r.error, a.error].find(Boolean);
+      if (failed) {
+        // Data yang tidak lengkap lebih berbahaya daripada tidak ada data sama sekali.
+        setLoadError(`Hasil angket gagal dimuat lengkap: ${failed.message}. Muat ulang halaman sebelum membaca atau mengekspor hasil.`);
+        return;
+      }
+      setSurvey(s.data as Survey);
+      setQuestions((q.data as SurveyQuestion[]) ?? []);
+      setResponses(r.data.sort((x, y) => x.submitted_at.localeCompare(y.submitted_at)));
+      setAnswers(a.data);
+    }
+    load();
   }, [id]);
+
+  // Indeks jawaban per respons + pertanyaan, dipakai untuk ekspor CSV.
+  const answerIndex = useMemo(() => {
+    const map = new Map<string, SurveyAnswer>();
+    for (const a of answers) map.set(`${a.response_id}:${a.question_id}`, a);
+    return map;
+  }, [answers]);
 
   const chartData = useMemo(() => {
     return questions
@@ -69,7 +87,7 @@ export function SurveyResults() {
     const rows = responses.map((r) => {
       const base = [r.id, r.submitted_at, r.respondent_email ?? ''];
       const qVals = questions.map((q) => {
-        const a = answers.find((x) => x.response_id === r.id && x.question_id === q.id);
+        const a = answerIndex.get(`${r.id}:${q.id}`);
         if (!a) return '';
         if (a.answer_choices) return a.answer_choices.join('; ');
         return a.answer_text ?? a.answer_choice ?? a.answer_number ?? '';
@@ -90,6 +108,15 @@ export function SurveyResults() {
     URL.revokeObjectURL(url);
   }
 
+  if (loadError) {
+    return (
+      <AdminLayout>
+        <div className="alert alert-error" role="alert">
+          {loadError}
+        </div>
+      </AdminLayout>
+    );
+  }
   if (!survey) return <AdminLayout>Memuat…</AdminLayout>;
 
   return (

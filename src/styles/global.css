@@ -520,3 +520,26 @@ img {
     height: 26px;
   }
 }
+
+/* ---------- Admin: pesan status ---------- */
+
+.alert {
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  border: 1px solid;
+}
+
+.alert-error {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.alert-success {
+  background: #eef5ee;
+  border-color: #9cc49c;
+  color: #2f5f2f;
+}

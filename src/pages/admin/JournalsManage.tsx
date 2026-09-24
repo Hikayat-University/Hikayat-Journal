@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '../../components/AdminLayout';
+import { Notice, type NoticeState } from '../../components/Notice';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import type { ContentStatus, Journal } from '../../lib/types';
+import { nextPublishedAt } from '../../lib/publishedAt';
+import { storageKey } from '../../lib/storage';
 
 const empty: { title: string; author: string; abstract: string; status: ContentStatus } = {
   title: '',
@@ -18,9 +21,16 @@ export function JournalsManage() {
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<NoticeState>(null);
+  // Mengganti key mengosongkan <input type="file"> setelah tersimpan.
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   async function load() {
-    const { data } = await supabase.from('journals').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('journals').select('*').order('created_at', { ascending: false });
+    if (error) {
+      setNotice({ type: 'error', text: `Gagal memuat daftar jurnal: ${error.message}` });
+      return;
+    }
     setJournals((data as Journal[]) ?? []);
   }
 
@@ -28,36 +38,50 @@ export function JournalsManage() {
     load();
   }, []);
 
+  // Kalau gagal, isi form dibiarkan supaya tidak perlu diketik ulang.
   async function handleSave() {
     setSaving(true);
+    setNotice(null);
     let file_url: string | null = null;
+    let uploadedPath: string | null = null;
 
     if (file) {
-      const path = `${Date.now()}-${file.name}`;
+      const path = storageKey(file.name);
       const { error: upErr } = await supabase.storage.from('journal-files').upload(path, file);
-      if (!upErr) {
-        const { data } = supabase.storage.from('journal-files').getPublicUrl(path);
-        file_url = data.publicUrl;
+      if (upErr) {
+        setNotice({ type: 'error', text: `PDF gagal diunggah, jurnal belum disimpan: ${upErr.message}` });
+        setSaving(false);
+        return;
       }
+      uploadedPath = path;
+      file_url = supabase.storage.from('journal-files').getPublicUrl(path).data.publicUrl;
     }
 
+    const existing = editingId ? journals.find((j) => j.id === editingId) : undefined;
     const payload = {
       ...form,
       ...(file_url ? { file_url } : {}),
-      published_at: form.status === 'published' ? new Date().toISOString() : null,
-      created_by: session?.user.id,
+      published_at: nextPublishedAt(form.status, existing?.published_at),
+      ...(editingId ? {} : { created_by: session?.user.id }),
     };
 
-    if (editingId) {
-      await supabase.from('journals').update(payload).eq('id', editingId);
-    } else {
-      await supabase.from('journals').insert(payload);
+    const { error } = editingId
+      ? await supabase.from('journals').update(payload).eq('id', editingId)
+      : await supabase.from('journals').insert(payload);
+
+    setSaving(false);
+    if (error) {
+      // PDF yang sudah terunggah dibuang supaya tidak jadi file yatim di storage.
+      if (uploadedPath) await supabase.storage.from('journal-files').remove([uploadedPath]);
+      setNotice({ type: 'error', text: `Jurnal gagal disimpan: ${error.message}` });
+      return;
     }
 
+    setNotice({ type: 'success', text: editingId ? 'Perubahan jurnal tersimpan.' : 'Jurnal baru tersimpan.' });
     setForm(empty);
     setFile(null);
+    setFileInputKey((k) => k + 1);
     setEditingId(null);
-    setSaving(false);
     load();
   }
 
@@ -68,13 +92,19 @@ export function JournalsManage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Hapus jurnal ini?')) return;
-    await supabase.from('journals').delete().eq('id', id);
+    const { error } = await supabase.from('journals').delete().eq('id', id);
+    if (error) {
+      setNotice({ type: 'error', text: `Jurnal gagal dihapus: ${error.message}` });
+      return;
+    }
+    setNotice({ type: 'success', text: 'Jurnal dihapus.' });
     load();
   }
 
   return (
     <AdminLayout>
       <h1 style={{ fontSize: 28, marginBottom: 24 }}>Jurnal</h1>
+      <Notice notice={notice} />
 
       <div className="card" style={{ marginBottom: 32 }}>
         <h3 style={{ marginBottom: 16 }}>{editingId ? 'Ubah Jurnal' : 'Tambah Jurnal Baru'}</h3>
@@ -92,7 +122,7 @@ export function JournalsManage() {
         </div>
         <div className="field">
           <label>File PDF</label>
-          <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <input key={fileInputKey} type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </div>
         <div className="field">
           <label>Status</label>
@@ -111,6 +141,8 @@ export function JournalsManage() {
               onClick={() => {
                 setEditingId(null);
                 setForm(empty);
+                setFile(null);
+                setFileInputKey((k) => k + 1);
               }}
             >
               Batal

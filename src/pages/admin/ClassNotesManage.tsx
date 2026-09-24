@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '../../components/AdminLayout';
+import { Notice, type NoticeState } from '../../components/Notice';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import type { ClassNote } from '../../lib/types';
+import { parseNoteFile, storageKey } from '../../lib/storage';
 
 const empty = { title: '', class_name: '', session_date: '', summary: '' };
 
@@ -13,9 +15,15 @@ export function ClassNotesManage() {
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [links, setLinks] = useState<Record<string, string>>({});
+  const [notice, setNotice] = useState<NoticeState>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   async function load() {
-    const { data } = await supabase.from('class_notes').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('class_notes').select('*').order('created_at', { ascending: false });
+    if (error) {
+      setNotice({ type: 'error', text: `Gagal memuat notulensi: ${error.message}` });
+      return;
+    }
     setNotes((data as ClassNote[]) ?? []);
   }
 
@@ -23,48 +31,76 @@ export function ClassNotesManage() {
     load();
   }, []);
 
-  // Bucket notulensi privat: buat signed URL sesaat untuk tiap file supaya bisa diunduh admin
+  // Bucket notulensi privat: file di storage dibuka lewat signed URL sesaat (1 jam).
+  // Link luar hasil impor data lama (mis. Google Drive) dipakai apa adanya.
   useEffect(() => {
     async function makeLinks() {
       const entries: Record<string, string> = {};
+      const storageNotes: { id: string; path: string }[] = [];
       for (const n of notes) {
-        if (!n.file_url) continue;
-        const path = n.file_url.split('/class-notes/').pop();
-        if (!path) continue;
-        const { data } = await supabase.storage.from('class-notes').createSignedUrl(path, 3600);
-        if (data?.signedUrl) entries[n.id] = data.signedUrl;
+        const f = parseNoteFile(n.file_url);
+        if (f?.kind === 'external') entries[n.id] = f.url;
+        if (f?.kind === 'storage') storageNotes.push({ id: n.id, path: f.path });
+      }
+      if (storageNotes.length) {
+        const { data } = await supabase.storage
+          .from('class-notes')
+          .createSignedUrls(storageNotes.map((n) => n.path), 3600);
+        data?.forEach((d, i) => {
+          if (d.signedUrl) entries[storageNotes[i].id] = d.signedUrl;
+        });
       }
       setLinks(entries);
     }
     if (notes.length) makeLinks();
   }, [notes]);
 
+  // Kalau gagal, isi form dibiarkan supaya tidak perlu diketik ulang.
   async function handleSave() {
     setSaving(true);
-    let file_url: string | null = null;
+    setNotice(null);
+    let path: string | null = null;
 
     if (file) {
-      const path = `${Date.now()}-${file.name}`;
+      path = storageKey(file.name);
       const { error: upErr } = await supabase.storage.from('class-notes').upload(path, file);
-      if (!upErr) file_url = path; // simpan path saja, signed URL dibuat saat ditampilkan
+      if (upErr) {
+        setNotice({ type: 'error', text: `File gagal diunggah, notulensi belum disimpan: ${upErr.message}` });
+        setSaving(false);
+        return;
+      }
     }
 
-    await supabase.from('class_notes').insert({
+    const { error } = await supabase.from('class_notes').insert({
       ...form,
       session_date: form.session_date || null,
-      file_url: file_url ? `class-notes/${file_url}` : null,
+      // Simpan path saja; signed URL dibuat saat ditampilkan.
+      file_url: path ? `class-notes/${path}` : null,
       created_by: session?.user.id,
     });
 
+    setSaving(false);
+    if (error) {
+      if (path) await supabase.storage.from('class-notes').remove([path]);
+      setNotice({ type: 'error', text: `Notulensi gagal disimpan: ${error.message}` });
+      return;
+    }
+
+    setNotice({ type: 'success', text: 'Notulensi tersimpan.' });
     setForm(empty);
     setFile(null);
-    setSaving(false);
+    setFileInputKey((k) => k + 1);
     load();
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Hapus notulensi ini?')) return;
-    await supabase.from('class_notes').delete().eq('id', id);
+    const { error } = await supabase.from('class_notes').delete().eq('id', id);
+    if (error) {
+      setNotice({ type: 'error', text: `Notulensi gagal dihapus: ${error.message}` });
+      return;
+    }
+    setNotice({ type: 'success', text: 'Notulensi dihapus.' });
     load();
   }
 
@@ -74,6 +110,7 @@ export function ClassNotesManage() {
       <p style={{ fontSize: 13, color: 'var(--ink-light)', marginBottom: 24 }}>
         Hanya terlihat oleh admin yang login — tamu tidak punya akses ke halaman ini maupun datanya.
       </p>
+      <Notice notice={notice} />
 
       <div className="card" style={{ marginBottom: 32 }}>
         <h3 style={{ marginBottom: 16 }}>Tambah Notulensi</h3>
@@ -95,7 +132,7 @@ export function ClassNotesManage() {
         </div>
         <div className="field">
           <label>File (PDF/gambar)</label>
-          <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          <input key={fileInputKey} type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </div>
         <button className="btn btn-accent" onClick={handleSave} disabled={saving || !form.title}>
           {saving ? 'Menyimpan…' : 'Tambah'}
