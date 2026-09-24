@@ -586,3 +586,238 @@ img {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* ---------- Admin: kerangka ---------- */
+
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--ink);
+  color: var(--white);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--f-display);
+  font-size: 18px;
+  line-height: 1.2;
+  padding: 0 8px;
+}
+
+.admin-brand img {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.admin-nav a {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-nav a:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-nav a.active {
+  color: var(--ink);
+  background: var(--white);
+}
+
+.admin-nav .admin-nav-external {
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px;
+  background: var(--paper);
+}
+
+.admin-topbar,
+.admin-close-btn,
+.admin-backdrop {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .admin-shell {
+    flex-direction: column;
+  }
+
+  .admin-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: 56px;
+    padding: 0 12px;
+    background: var(--ink);
+    color: var(--white);
+  }
+
+  .admin-topbar .admin-brand {
+    font-size: 16px;
+    padding: 0;
+  }
+
+  .admin-topbar .admin-brand img {
+    width: 26px;
+    height: 26px;
+  }
+
+  .admin-menu-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 40px;
+    height: 40px;
+    padding: 0 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .admin-menu-btn span {
+    display: block;
+    height: 2px;
+    background: var(--white);
+    border-radius: 1px;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 40;
+    width: min(280px, 85vw);
+    transform: translateX(-100%);
+    transition: transform var(--t);
+  }
+
+  .admin-sidebar.open {
+    transform: none;
+  }
+
+  .admin-close-btn {
+    display: block;
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--white);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .admin-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .admin-main {
+    padding: 20px 16px 48px;
+  }
+
+  /* Kartu daftar: tombol aksi turun ke bawah judul. */
+  .admin-row,
+  .question-row {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .admin-row .row-actions,
+  .question-actions {
+    justify-content: flex-start;
+  }
+}
+
+.admin-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-row.editing {
+  border-color: var(--accent);
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.editor-tabs {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 6px;
+}
+
+.editor-tabs [role='tablist'] {
+  display: flex;
+  border: 1px solid var(--paper-mid);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.editor-tabs [role='tab'] {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 12px;
+  border: none;
+  background: var(--white);
+  color: var(--ink-light);
+  cursor: pointer;
+}
+
+.editor-tabs [role='tab'].active {
+  background: var(--ink);
+  color: var(--white);
+}
+
+.editor-preview {
+  border: 1px solid var(--paper-mid);
+  border-radius: var(--r-sm);
+  background: var(--white);
+  padding: 16px 18px;
+  min-height: 200px;
+  max-height: 520px;
+  overflow-y: auto;
+}

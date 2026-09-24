@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '../../components/AdminLayout';
+import { ListToolbar, ShowMore, useAdminList } from '../../components/AdminList';
 import { Notice, type NoticeState } from '../../components/Notice';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import type { ClassNote } from '../../lib/types';
 import { parseNoteFile, storageKey } from '../../lib/storage';
+import { fetchAll } from '../../lib/fetchAll';
 
 const empty = { title: '', class_name: '', session_date: '', summary: '' };
 
@@ -22,13 +24,17 @@ export function ClassNotesManage() {
   const [notice, setNotice] = useState<NoticeState>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
 
+  const list = useAdminList(notes, (n) => [n.title, n.class_name, n.session_date, n.summary]);
+
   async function load() {
-    const { data, error } = await supabase.from('class_notes').select('*').order('created_at', { ascending: false });
+    const { data, error } = await fetchAll<ClassNote>((from, to) =>
+      supabase.from('class_notes').select('*').order('created_at', { ascending: false }).order('id').range(from, to)
+    );
     if (error) {
       setNotice({ type: 'error', text: `Gagal memuat notulensi: ${error.message}` });
       return;
     }
-    setNotes((data as ClassNote[]) ?? []);
+    setNotes(data);
   }
 
   useEffect(() => {
@@ -217,26 +223,24 @@ export function ClassNotesManage() {
         </div>
       </div>
 
+      <ListToolbar
+        query={list.query}
+        onQuery={list.setQuery}
+        placeholder="Cari judul, kelas, tanggal, ringkasan…"
+        total={notes.length}
+        shown={list.filtered.length}
+      />
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {notes.map((n) => (
-          <div
-            key={n.id}
-            className="card"
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 16,
-              ...(editingId === n.id ? { borderColor: 'var(--accent)' } : {}),
-            }}
-          >
-            <div>
+        {list.visible.map((n) => (
+          <div key={n.id} className={`card admin-row${editingId === n.id ? ' editing' : ''}`}>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600 }}>{n.title}</div>
               <div style={{ fontSize: 13, color: 'var(--ink-light)' }}>
                 {[n.class_name, n.session_date].filter(Boolean).join(' · ')}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <div className="row-actions">
               {links[n.id] && (
                 <a href={links[n.id]} target="_blank" rel="noreferrer" className="btn btn-outline">
                   Buka File
@@ -251,6 +255,7 @@ export function ClassNotesManage() {
             </div>
           </div>
         ))}
+        <ShowMore remaining={list.remaining} onClick={list.showMore} />
       </div>
     </AdminLayout>
   );

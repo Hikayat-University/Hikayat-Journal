@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AdminLayout } from '../../components/AdminLayout';
+import { ListToolbar, ShowMore, useAdminList } from '../../components/AdminList';
 import { Notice, type NoticeState } from '../../components/Notice';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import type { ContentStatus, Journal } from '../../lib/types';
 import { nextPublishedAt } from '../../lib/publishedAt';
 import { storageKey } from '../../lib/storage';
+import { fetchAll } from '../../lib/fetchAll';
 
 type JournalForm = {
   title: string;
@@ -43,14 +46,23 @@ export function JournalsManage() {
   const [notice, setNotice] = useState<NoticeState>(null);
   // Mengganti key mengosongkan <input type="file"> setelah tersimpan.
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<'' | ContentStatus>('');
+
+  const list = useAdminList(
+    journals,
+    (j) => [j.title, j.author, j.field, j.year, j.keywords],
+    statusFilter ? (j) => j.status === statusFilter : undefined
+  );
 
   async function load() {
-    const { data, error } = await supabase.from('journals').select('*').order('created_at', { ascending: false });
+    const { data, error } = await fetchAll<Journal>((from, to) =>
+      supabase.from('journals').select('*').order('created_at', { ascending: false }).order('id').range(from, to)
+    );
     if (error) {
       setNotice({ type: 'error', text: `Gagal memuat daftar jurnal: ${error.message}` });
       return;
     }
-    setJournals((data as Journal[]) ?? []);
+    setJournals(data);
   }
 
   useEffect(() => {
@@ -269,20 +281,31 @@ export function JournalsManage() {
         </div>
       </div>
 
+      <ListToolbar
+        query={list.query}
+        onQuery={list.setQuery}
+        placeholder="Cari judul, penulis, bidang, tahun…"
+        total={journals.length}
+        shown={list.filtered.length}
+      >
+        <select
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value as '' | ContentStatus);
+            list.resetLimit();
+          }}
+          aria-label="Filter status"
+        >
+          <option value="">Semua status</option>
+          <option value="published">Terbit</option>
+          <option value="draft">Draft</option>
+        </select>
+      </ListToolbar>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {journals.map((j) => (
-          <div
-            key={j.id}
-            className="card"
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 16,
-              ...(editingId === j.id ? { borderColor: 'var(--accent)' } : {}),
-            }}
-          >
-            <div>
+        {list.visible.map((j) => (
+          <div key={j.id} className={`card admin-row${editingId === j.id ? ' editing' : ''}`}>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600 }}>{j.title}</div>
               <div style={{ fontSize: 13, color: 'var(--ink-light)', margin: '4px 0 6px' }}>
                 {[j.author, j.year, j.field].filter(Boolean).join(' · ') || 'Metadata belum lengkap'}
@@ -290,7 +313,12 @@ export function JournalsManage() {
               <span className="badge">{j.status === 'published' ? 'Terbit' : 'Draft'}</span>{' '}
               {!j.file_url && <span className="badge">Tanpa file</span>}
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="row-actions">
+              {j.status === 'published' && (
+                <Link to={`/jurnal/${j.id}`} target="_blank" className="btn btn-outline">
+                  Lihat ↗
+                </Link>
+              )}
               <button className="btn btn-outline" onClick={() => startEdit(j)}>
                 Ubah
               </button>
@@ -300,6 +328,7 @@ export function JournalsManage() {
             </div>
           </div>
         ))}
+        <ShowMore remaining={list.remaining} onClick={list.showMore} />
       </div>
     </AdminLayout>
   );

@@ -124,7 +124,7 @@ export function SurveyResults() {
       <Link to="/admin/angket" style={{ fontSize: 13, color: 'var(--ink-light)' }}>
         ← Kembali ke Angket
       </Link>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0 24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, margin: '8px 0 24px' }}>
         <h1 style={{ fontSize: 28 }}>{survey.title} — Hasil</h1>
         <button className="btn btn-accent" onClick={exportCsv} disabled={!responses.length}>
           Ekspor CSV
