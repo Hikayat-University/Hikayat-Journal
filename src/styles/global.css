@@ -821,3 +821,120 @@ img {
   max-height: 520px;
   overflow-y: auto;
 }
+
+/* ---------- Admin: kartu angket ---------- */
+
+.survey-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.survey-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.survey-title {
+  font-family: var(--f-body);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.survey-badges {
+  display: flex;
+  gap: 6px;
+}
+
+.survey-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.survey-actions-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.survey-actions-more {
+  display: flex;
+  gap: 18px;
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink-light);
+  cursor: pointer;
+}
+
+.text-btn:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.text-btn-danger {
+  color: var(--accent);
+}
+
+.text-btn-danger:hover {
+  color: var(--accent);
+}
+
+.survey-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--paper-mid);
+}
+
+.survey-link-label {
+  font-size: 13px;
+  color: var(--ink-light);
+}
+
+.survey-link code {
+  flex: 1 1 260px;
+  min-width: 0;
+  font-family: var(--f-mono);
+  font-size: 13px;
+  color: var(--ink-light);
+  background: var(--paper-dim);
+  padding: 6px 10px;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+
+.survey-link .btn {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+/* Label status: Inter, bukan mono. */
+.badge {
+  font-family: var(--f-body);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-success {
+  background: #e6f2e6;
+  color: #2f6b2f;
+}
+
+.badge-muted {
+  background: var(--paper-dim);
+  color: var(--ink-light);
+}

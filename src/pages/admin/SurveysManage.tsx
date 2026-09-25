@@ -15,6 +15,7 @@ export function SurveysManage() {
   const [editTitle, setEditTitle] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function load() {
     const { data, error } = await supabase.from('surveys').select('*').order('created_at', { ascending: false });
@@ -176,50 +177,53 @@ export function SurveysManage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {surveys.map((s) => (
-          <div key={s.id} className="card">
-            <div className="admin-row" style={{ marginBottom: 12 }}>
-              <div style={{ flex: 1 }}>
-                {editingId === s.id ? (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} autoFocus />
-                    <button className="btn btn-accent" style={{ whiteSpace: 'nowrap' }} onClick={() => saveTitle(s)} disabled={busyId === s.id}>
-                      Simpan
-                    </button>
-                    <button className="btn btn-outline" style={{ whiteSpace: 'nowrap' }} onClick={() => setEditingId(null)}>
-                      Batal
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ fontWeight: 600 }}>{s.title}</div>
-                    <span className="badge">{s.is_open ? 'Terbuka' : 'Ditutup'}</span>{' '}
-                    <span className="badge">{s.is_anonymous ? 'Anonim' : 'Dengan email'}</span>
-                  </>
-                )}
+          <div key={s.id} className="card survey-card">
+            {editingId === s.id ? (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <input style={{ flex: '1 1 240px', width: 'auto' }} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} autoFocus />
+                <button className="btn btn-accent" onClick={() => saveTitle(s)} disabled={busyId === s.id}>
+                  Simpan
+                </button>
+                <button className="btn btn-outline" onClick={() => setEditingId(null)}>
+                  Batal
+                </button>
               </div>
-              {editingId !== s.id && (
-                <div className="row-actions" style={{ flexShrink: 1 }}>
-                  <Link to={`/admin/angket/${s.id}/edit`} className="btn btn-outline">
+            ) : (
+              <div className="survey-head">
+                <h3 className="survey-title">{s.title}</h3>
+                <div className="survey-badges">
+                  <span className={`badge ${s.is_open ? 'badge-success' : 'badge-muted'}`}>{s.is_open ? 'Terbuka' : 'Ditutup'}</span>
+                  <span className="badge badge-muted">{s.is_anonymous ? 'Anonim' : 'Dengan email'}</span>
+                </div>
+              </div>
+            )}
+
+            {editingId !== s.id && (
+              <div className="survey-actions">
+                <div className="survey-actions-main">
+                  <Link to={`/admin/angket/${s.id}/edit`} className="btn">
                     Kelola Pertanyaan
                   </Link>
                   <Link to={`/admin/angket/${s.id}/hasil`} className="btn btn-outline">
                     Lihat Hasil
                   </Link>
                   <button className="btn btn-outline" onClick={() => toggleOpen(s)}>
-                    {s.is_open ? 'Tutup' : 'Buka'}
+                    {s.is_open ? 'Tutup Angket' : 'Buka Angket'}
                   </button>
-                  <button className="btn btn-outline" onClick={() => startEditTitle(s)}>
-                    Ubah Judul
+                </div>
+                <div className="survey-actions-more">
+                  <button className="text-btn" onClick={() => startEditTitle(s)}>
+                    Ubah judul
                   </button>
-                  <button className="btn btn-outline" onClick={() => handleDuplicate(s)} disabled={busyId === s.id}>
+                  <button className="text-btn" onClick={() => handleDuplicate(s)} disabled={busyId === s.id}>
                     {busyId === s.id ? 'Menduplikat…' : 'Duplikat'}
                   </button>
-                  <button className="btn btn-outline" onClick={() => setConfirmDeleteId(s.id)}>
+                  <button className="text-btn text-btn-danger" onClick={() => setConfirmDeleteId(s.id)}>
                     Hapus
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {confirmDeleteId === s.id && (
               <div
@@ -251,17 +255,18 @@ export function SurveysManage() {
               </div>
             )}
 
-            <div style={{ fontSize: 13, color: 'var(--ink-light)', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-              Link unlisted:
-              <code style={{ background: 'var(--paper-dim)', padding: '2px 8px', borderRadius: 6, overflowWrap: 'anywhere', minWidth: 0 }}>
-                {linkFor(s.slug)}
-              </code>
+            <div className="survey-link">
+              <span className="survey-link-label">Link angket</span>
+              <code>{linkFor(s.slug)}</code>
               <button
                 className="btn btn-outline"
-                style={{ padding: '4px 10px', fontSize: 12 }}
-                onClick={() => navigator.clipboard.writeText(linkFor(s.slug))}
+                onClick={() => {
+                  navigator.clipboard.writeText(linkFor(s.slug));
+                  setCopiedId(s.id);
+                  setTimeout(() => setCopiedId((cur) => (cur === s.id ? null : cur)), 2000);
+                }}
               >
-                Salin
+                {copiedId === s.id ? 'Tersalin ✓' : 'Salin'}
               </button>
             </div>
           </div>
