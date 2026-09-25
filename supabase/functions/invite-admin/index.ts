@@ -1,5 +1,7 @@
 // Edge Function: invite-admin
-// Dipanggil oleh admin yang sudah login untuk mengundang admin baru lewat email.
+// Dipanggil oleh admin aktif untuk mengundang admin baru lewat email.
+// Akun baru otomatis ber-role 'member' (trigger handle_new_user); fungsi ini
+// yang mengangkatnya jadi 'admin' setelah undangan terkirim.
 // Memakai service_role key yang HANYA hidup di server Supabase (Function Secrets),
 // tidak pernah dikirim ke browser.
 
@@ -47,12 +49,32 @@ Deno.serve(async (req: Request) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Hanya admin/owner yang aktif boleh mengundang.
+    const { data: caller } = await adminClient
+      .from('profiles')
+      .select('role, disabled_at')
+      .eq('id', userData.user.id)
+      .maybeSingle();
+    if (!caller || caller.disabled_at || !['admin', 'owner'].includes(caller.role)) {
+      return reply({ error: 'Hanya admin aktif yang boleh mengundang admin baru.' }, 403);
+    }
+
     const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
       data: { full_name: full_name ?? email },
     });
 
     if (error) {
       return reply({ error: error.message }, 400);
+    }
+
+    // Profil dibuat trigger dengan role 'member'; angkat jadi admin.
+    const { error: roleErr } = await adminClient
+      .from('profiles')
+      .update({ role: 'admin', full_name: full_name ?? email })
+      .eq('id', data.user.id);
+    if (roleErr) {
+      return reply({ error: `Undangan terkirim, tapi gagal menjadikannya admin: ${roleErr.message}` }, 500);
     }
 
     return reply({ ok: true, user: data.user });
