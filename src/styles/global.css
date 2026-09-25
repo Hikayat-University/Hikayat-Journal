@@ -596,15 +596,18 @@ img {
 
 .admin-sidebar {
   width: 240px;
-  flex-shrink: 0;
   background: var(--ink);
   color: var(--white);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
-  position: sticky;
+  /* Dipaku ke kiri layar. Sticky di dalam flex tidak andal di Safari/iPad:
+     sidebar ikut tergulir di halaman yang panjang. */
+  position: fixed;
   top: 0;
-  height: 100vh;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
   overflow-y: auto;
 }
 
@@ -655,6 +658,7 @@ img {
 .admin-main {
   flex: 1;
   min-width: 0;
+  margin-left: 240px;
   padding: 32px;
   background: var(--paper);
 }
@@ -748,6 +752,7 @@ img {
   }
 
   .admin-main {
+    margin-left: 0;
     padding: 20px 16px 48px;
   }
 
