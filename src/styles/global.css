@@ -938,3 +938,256 @@ img {
   background: var(--paper-dim);
   color: var(--ink-light);
 }
+
+/* ---------- Admin: hasil angket ---------- */
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0 20px;
+}
+
+.results-title {
+  font-size: clamp(24px, 3.2vw, 32px);
+  line-height: 1.2;
+  margin-top: 6px;
+}
+
+.results-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.results-summary > div {
+  flex: 1 1 160px;
+  background: var(--white);
+  border: 1px solid var(--paper-mid);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.results-summary strong {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.results-summary span {
+  font-size: 13px;
+  color: var(--ink-light);
+}
+
+.results-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.results-group-title {
+  font-family: var(--f-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 8px;
+}
+
+.result-card {
+  background: var(--white);
+  border: 1px solid var(--paper-mid);
+  border-radius: var(--r);
+  padding: 22px 24px;
+}
+
+.result-meta {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+
+.result-question {
+  font-family: var(--f-body);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.result-sub,
+.result-note {
+  font-size: 13px;
+  color: var(--ink-light);
+  margin: 0 0 16px;
+}
+
+.result-sub strong {
+  color: var(--ink);
+}
+
+.result-note {
+  margin-top: -10px;
+}
+
+.result-mean {
+  display: inline-block;
+  font-size: 14px;
+  color: var(--ink-light);
+  background: var(--paper);
+  border-radius: var(--r-sm);
+  padding: 6px 12px;
+  margin: -4px 0 16px;
+}
+
+.result-mean strong {
+  font-size: 18px;
+  color: var(--ink);
+}
+
+/* Batang horizontal: label | batang | angka. */
+.bar-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 34%) 1fr 84px;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+}
+
+.bar-row:hover {
+  background: var(--paper);
+}
+
+.bar-label {
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.bar-row.is-top .bar-label {
+  font-weight: 600;
+}
+
+.bar-legacy {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.bar-track {
+  height: 14px;
+  background: var(--paper-dim);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  min-width: 0;
+}
+
+.bar-value {
+  text-align: right;
+  color: var(--ink-light);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bar-value strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.bar-row.is-zero .bar-label,
+.bar-row.is-zero .bar-value,
+.bar-row.is-zero .bar-value strong {
+  color: var(--ink-faint);
+}
+
+.text-answer-search {
+  margin-bottom: 12px;
+}
+
+.text-answers {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.text-answers li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  background: var(--paper);
+  border-radius: var(--r-sm);
+  white-space: pre-wrap;
+}
+
+.text-answer-count {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-light);
+  background: var(--paper-dim);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.text-answer-empty {
+  color: var(--ink-faint);
+}
+
+@media (max-width: 640px) {
+  .result-card {
+    padding: 18px 16px;
+  }
+
+  /* Di HP label pindah ke atas batang supaya batangnya tetap panjang. */
+  .bar-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 'label value' 'track track';
+    gap: 6px 12px;
+  }
+
+  .bar-label {
+    grid-area: label;
+  }
+
+  .bar-value {
+    grid-area: value;
+  }
+
+  .bar-track {
+    grid-area: track;
+    height: 10px;
+  }
+}
