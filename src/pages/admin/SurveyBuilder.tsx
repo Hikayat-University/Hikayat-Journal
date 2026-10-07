@@ -27,6 +27,7 @@ export function SurveyBuilder() {
 
   const [newDraft, setNewDraft] = useState<QuestionDraft>(emptyDraft);
   const [editing, setEditing] = useState<Editing | null>(null);
+  const [editingSection, setEditingSection] = useState<{ id: string; title: string; description: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<NoticeState>(null);
 
@@ -90,12 +91,47 @@ export function SurveyBuilder() {
       survey_id: id,
       title: newSectionTitle,
       description: newSectionDesc || null,
-      position: sections.length,
+      position: sections.reduce((max, s) => Math.max(max, s.position), -1) + 1,
     });
     if (error) return fail('Fase gagal ditambahkan', error.message);
     setNotice(null);
     setNewSectionTitle('');
     setNewSectionDesc('');
+    load();
+  }
+
+  async function saveSection() {
+    if (!editingSection || !editingSection.title.trim()) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from('survey_sections')
+      .update({ title: editingSection.title.trim(), description: editingSection.description.trim() || null })
+      .eq('id', editingSection.id);
+    setBusy(false);
+    // Kalau gagal, isian dibiarkan supaya tidak perlu diketik ulang.
+    if (error) return fail('Fase gagal disimpan', error.message);
+    setNotice({ type: 'success', text: 'Fase tersimpan.' });
+    setEditingSection(null);
+    load();
+  }
+
+  /** Tukar urutan fase dengan tetangganya, lalu nomori ulang semuanya. */
+  async function moveSection(sec: SurveySection, dir: -1 | 1) {
+    const ordered = [...sections].sort((a, b) => a.position - b.position);
+    const i = ordered.findIndex((x) => x.id === sec.id);
+    const j = i + dir;
+    if (j < 0 || j >= ordered.length) return;
+    [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+
+    const changes = ordered.map((x, pos) => ({ id: x.id, pos, old: x.position })).filter((c) => c.pos !== c.old);
+    setBusy(true);
+    setSections(ordered.map((x, pos) => ({ ...x, position: pos })));
+    const results = await Promise.all(
+      changes.map((c) => supabase.from('survey_sections').update({ position: c.pos }).eq('id', c.id))
+    );
+    setBusy(false);
+    const err = results.find((r) => r.error)?.error;
+    if (err) fail('Urutan fase gagal disimpan', err.message);
     load();
   }
 
@@ -238,34 +274,78 @@ export function SurveyBuilder() {
 
         {sections.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-            {sections.map((sec, i) => (
-              <div
-                key={sec.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px 12px',
-                  background: 'var(--paper-dim)',
-                  borderRadius: 8,
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>
-                    Fase {i + 1}: {sec.title}
+            {sections.map((sec, i) =>
+              editingSection?.id === sec.id ? (
+                <div key={sec.id} className="phase-row editing">
+                  <div className="field">
+                    <label>Judul fase {i + 1}</label>
+                    <input
+                      value={editingSection.title}
+                      onChange={(e) => setEditingSection({ ...editingSection, title: e.target.value })}
+                      autoFocus
+                    />
                   </div>
-                  {sec.description && (
-                    <div style={{ fontSize: 12, color: 'var(--ink-light)', marginTop: 2 }}>{sec.description}</div>
-                  )}
-                  <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 2 }}>
-                    {questions.filter((q) => q.section_id === sec.id).length} pertanyaan
+                  <div className="field">
+                    <label>Deskripsi / penjelasan fase (opsional)</label>
+                    <textarea
+                      rows={5}
+                      value={editingSection.description}
+                      onChange={(e) => setEditingSection({ ...editingSection, description: e.target.value })}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-accent" onClick={saveSection} disabled={busy || !editingSection.title.trim()}>
+                      Simpan
+                    </button>
+                    <button className="btn btn-outline" onClick={() => setEditingSection(null)}>
+                      Batal
+                    </button>
                   </div>
                 </div>
-                <button className="btn btn-outline" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => deleteSection(sec)}>
-                  Hapus
-                </button>
-              </div>
-            ))}
+              ) : (
+                <div key={sec.id} className="phase-row">
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>
+                      Fase {i + 1}: {sec.title}
+                    </div>
+                    {sec.description && <div className="phase-desc">{sec.description}</div>}
+                    <div style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 2 }}>
+                      {questions.filter((q) => q.section_id === sec.id).length} pertanyaan
+                    </div>
+                  </div>
+                  <div className="question-actions">
+                    <button
+                      className="btn btn-outline icon-btn"
+                      onClick={() => moveSection(sec, -1)}
+                      disabled={busy || i === 0}
+                      aria-label="Naikkan fase"
+                      title="Naikkan fase"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      className="btn btn-outline icon-btn"
+                      onClick={() => moveSection(sec, 1)}
+                      disabled={busy || i === sections.length - 1}
+                      aria-label="Turunkan fase"
+                      title="Turunkan fase"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => setEditingSection({ id: sec.id, title: sec.title, description: sec.description ?? '' })}
+                      disabled={!!editingSection}
+                    >
+                      Ubah
+                    </button>
+                    <button className="btn btn-outline" onClick={() => deleteSection(sec)}>
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
           </div>
         )}
 
